@@ -1,0 +1,81 @@
+pipeline {
+    agent any
+
+    parameters {
+        string(name: 'GIT_BRANCH', defaultValue: 'main', description: 'Git 分支')
+        string(name: 'SERVER_HOST', defaultValue: '47.103.108.47', description: '服务器地址')
+    }
+
+    environment {
+        GIT_CREDENTIALS = credentials('your-git-credentials-id')
+        SERVER_SSH_KEY = credentials('your-server-ssh-key-id')
+    }
+
+    stages {
+        stage('拉取代码') {
+            steps {
+                git branch: "${GIT_BRANCH}",
+                    url: 'https://github.com/yourusername/data-server.git',
+                    credentialsId: 'your-git-credentials-id'
+                echo '✓ 代码拉取完成'
+            }
+        }
+
+        stage('代码检查') {
+            steps {
+                sh 'python3 -m py_compile app.py'
+                echo '✓ 代码语法检查通过'
+            }
+        }
+
+        stage('构建') {
+            steps {
+                sh 'pip3 install -r requirements.txt'
+                echo '✓ 依赖安装完成'
+            }
+        }
+
+        stage('部署到服务器') {
+            steps {
+                sshagent(['your-server-ssh-key-id']) {
+                    sh '''
+                        scp -o StrictHostKeyChecking=no app.py root@${SERVER_HOST}:/root/data-server/
+                        scp -o StrictHostKeyChecking=no requirements.txt root@${SERVER_HOST}:/root/data-server/
+                        scp -o StrictHostKeyChecking=no deploy.sh root@${SERVER_HOST}:/root/data-server/
+                        
+                        ssh -o StrictHostKeyChecking=no root@${SERVER_HOST} "
+                            cd /root/data-server &&
+                            chmod +x deploy.sh &&
+                            ./deploy.sh
+                        "
+                    '''
+                }
+                echo '✓ 部署完成'
+            }
+        }
+
+        stage('健康检查') {
+            steps {
+                script {
+                    def response = sh(
+                        script: "curl -s http://${SERVER_HOST}:5000/api/health",
+                        returnStdout: true
+                    ).trim()
+                    echo "健康检查结果：${response}"
+                }
+            }
+        }
+    }
+
+    post {
+        always {
+            echo '部署流程结束'
+        }
+        success {
+            echo '🎉 部署成功！'
+        }
+        failure {
+            echo ' 部署失败，请检查日志'
+        }
+    }
+}

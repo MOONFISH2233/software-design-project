@@ -1,0 +1,117 @@
+{
+	"info": {
+		"_postman_id": "flask-data-server-collection",
+		"name": "Flask 数据服务器 API",
+		"description": "用于接收传感器数据的 RESTful API 服务\n\n版本：v2.0\n最后更新：2026-03-30",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://47.103.108.47:5000",
+			"type": "string"
+		}
+	],
+	"item": [
+		{
+			"name": "1. 数据接收接口",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"data\": {\n        \"sensor_type\": \"skin\",\n        \"moisture\": 65,\n        \"oiliness\": 35,\n        \"device_id\": \"sensor_001\"\n    },\n    \"description\": \"皮肤传感器数据\",\n    \"source\": \"local\",\n    \"upload_time\": \"{{upload_time}}\"\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/api/receive",
+					"host": ["{{base_url}}"],
+					"path": ["api", "receive"]
+				},
+				"description": "接收客户端上传的数据并保存到文件"
+			},
+			"response": []
+		},
+		{
+			"name": "2. 健康检查接口",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{base_url}}/api/health",
+					"host": ["{{base_url}}"],
+					"path": ["api", "health"]
+				},
+				"description": "检查服务器运行状态"
+			},
+			"response": []
+		},
+		{
+			"name": "3. 日志查询接口",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{base_url}}/api/logs",
+					"host": ["{{base_url}}"],
+					"path": ["api", "logs"]
+				},
+				"description": "获取最近的服务器日志（最后 100 行）"
+			},
+			"response": []
+		},
+		{
+			"name": "4. 统计信息接口",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{base_url}}/api/stats",
+					"host": ["{{base_url}}"],
+					"path": ["api", "stats"]
+				},
+				"description": "获取服务器运行统计信息"
+			},
+			"response": []
+		},
+		{
+			"name": "5. 环境传感器数据示例",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"data\": {\n        \"sensor_type\": \"environment\",\n        \"humidity\": 55,\n        \"light_lux\": 650,\n        \"temperature\": 25.5,\n        \"device_id\": \"env_sensor_001\"\n    },\n    \"description\": \"环境传感器数据\",\n    \"source\": \"local\"\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/api/receive",
+					"host": ["{{base_url}}"],
+					"path": ["api", "receive"]
+				},
+				"description": "环境传感器数据上传示例"
+			},
+			"response": []
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					"// 设置当前时间为 upload_time 变量",
+					"pm.variables.set('upload_time', new Date().toISOString());"
+				]
+			}
+		}
+	]
+}

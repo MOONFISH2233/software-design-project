@@ -1,0 +1,282 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Flask 数据服务器 API",
+    "description": "用于接收传感器数据的 RESTful API 服务",
+    "version": "2.0.0",
+    "contact": {
+      "name": "API Support"
+    }
+  },
+  "servers": [
+    {
+      "url": "http://47.103.108.47:5000",
+      "description": "生产服务器"
+    },
+    {
+      "url": "http://localhost:5000",
+      "description": "本地开发环境"
+    }
+  ],
+  "tags": [
+    {
+      "name": "数据接收",
+      "description": "数据上传和接收相关接口"
+    },
+    {
+      "name": "系统监控",
+      "description": "健康检查和状态监控接口"
+    },
+    {
+      "name": "日志管理",
+      "description": "日志查询和管理接口"
+    }
+  ],
+  "paths": {
+    "/api/receive": {
+      "post": {
+        "tags": ["数据接收"],
+        "summary": "接收数据",
+        "description": "接收客户端上传的数据并保存到文件",
+        "operationId": "receiveData",
+        "requestBody": {
+          "description": "要上传的数据对象",
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DataPayload"
+              }
+            },
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "$ref": "#/components/schemas/DataPayload"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "数据接收成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "服务器内部错误",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/health": {
+      "get": {
+        "tags": ["系统监控"],
+        "summary": "健康检查",
+        "description": "检查服务器运行状态",
+        "operationId": "healthCheck",
+        "responses": {
+          "200": {
+            "description": "服务器健康状态正常",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/logs": {
+      "get": {
+        "tags": ["日志管理"],
+        "summary": "获取日志",
+        "description": "获取最近的服务器日志（最后 100 行）",
+        "operationId": "getLogs",
+        "responses": {
+          "200": {
+            "description": "日志获取成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LogsResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "获取日志失败",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/stats": {
+      "get": {
+        "tags": ["系统监控"],
+        "summary": "获取统计信息",
+        "description": "获取服务器运行统计信息",
+        "operationId": "getStats",
+        "responses": {
+          "200": {
+            "description": "统计信息获取成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StatsResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "DataPayload": {
+        "type": "object",
+        "description": "数据上传负载",
+        "properties": {
+          "data": {
+            "type": "object",
+            "description": "实际要传输的数据对象"
+          },
+          "description": {
+            "type": "string",
+            "description": "数据描述信息"
+          },
+          "source": {
+            "type": "string",
+            "description": "数据来源",
+            "enum": ["local", "cloud_sync"]
+          },
+          "upload_time": {
+            "type": "string",
+            "format": "date-time",
+            "description": "上传时间（ISO 格式）"
+          }
+        },
+        "required": ["data"]
+      },
+      "SuccessResponse": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "example": "success"
+          },
+          "message": {
+            "type": "string",
+            "example": "数据接收成功"
+          },
+          "filename": {
+            "type": "string",
+            "example": "data_20260322_153000_123456.json"
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "process_time_ms": {
+            "type": "number",
+            "example": 15.23
+          }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "example": "error"
+          },
+          "message": {
+            "type": "string",
+            "example": "错误描述信息"
+          }
+        }
+      },
+      "HealthResponse": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "example": "healthy"
+          },
+          "service": {
+            "type": "string",
+            "example": "Flask Data Server v2.0"
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "total_requests": {
+            "type": "integer",
+            "description": "累计请求数"
+          },
+          "uptime": {
+            "type": "string",
+            "example": "running"
+          }
+        }
+      },
+      "LogsResponse": {
+        "type": "object",
+        "properties": {
+          "logs": {
+            "type": "string",
+            "description": "日志内容"
+          },
+          "file": {
+            "type": "string",
+            "example": "server_20260322.log"
+          }
+        }
+      },
+      "StatsResponse": {
+        "type": "object",
+        "properties": {
+          "total_requests": {
+            "type": "integer",
+            "description": "总请求数"
+          },
+          "current_time": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "version": {
+            "type": "string",
+            "example": "2.0.0"
+          },
+          "features": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "功能特性列表"
+          }
+        }
+      }
+    }
+  }
+}
