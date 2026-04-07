@@ -1,29 +1,74 @@
 """
-Flask 数据服务器
-功能：接收数据、保存到文件、记录日志
-版本：v2.0 - 高性能并发优化版
+Flask 数据服务器 - 支持加密和鉴权
+功能：接收数据、保存到文件、记录日志、JWT 鉴权、AES 加密
+版本：v3.0 - 安全增强版
 """
 
 from flask import Flask, request, jsonify
-from datetime import datetime
-import logging
-from logging.handlers import RotatingFileHandler
+from flask_httpauth import HTTPTokenAuth
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
+from datetime import datetime, timedelta
+from functools import wraps
+import jwt
+import hashlib
+import secrets
+from cryptography.fernet import Fernet
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
+import base64
 import os
 import json
+import logging
+from logging.handlers import RotatingFileHandler
 import threading
 import queue
-import time
 import random
-from typing import Dict, Any
+import time
+from typing import Dict, Any, Optional
 
 app = Flask(__name__)
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', secrets.token_hex(32))
+app.config['JWT_EXPIRATION_HOURS'] = 24
+
+# 初始化认证
+auth = HTTPTokenAuth(scheme='Bearer')
+
+# 请求限流配置 - 支持压力测试
+# 生产环境建议降低这些值
+# 环境变量 RATE_LIMIT_ENABLED 控制是否启用限流（默认启用）
+rate_limit_enabled = os.environ.get('RATE_LIMIT_ENABLED', 'true').lower() == 'true'
+
+if rate_limit_enabled:
+    limiter = Limiter(
+        app=app,
+        key_func=get_remote_address,
+        default_limits=["100 per minute", "1000 per hour"]  # 正常模式
+    )
+    print("ℹ️  请求限流已启用：100次/分钟，1000次/小时")
+else:
+    limiter = Limiter(
+        app=app,
+        key_func=get_remote_address,
+        default_limits=["100000 per minute", "1000000 per hour"]  # 压力测试模式
+    )
+    print("⚠️  请求限流已放宽：100000次/分钟（压力测试模式）")
 
 # 创建日志目录和文件存储目录
 LOG_DIR = 'logs'
 DATA_DIR = 'data'
+SECURITY_DIR = 'security'
 os.makedirs(LOG_DIR, exist_ok=True)
 os.makedirs(DATA_DIR, exist_ok=True)
+os.makedirs(SECURITY_DIR, exist_ok=True)
 
+# 将配置添加到 Flask app.config
+app.config['LOG_DIR'] = LOG_DIR
+app.config['DATA_DIR'] = DATA_DIR
+app.config['SECURITY_DIR'] = SECURITY_DIR
+
+
+# ==================== 日志处理类 ====================
 
 class AsyncLogHandler(logging.Handler):
     """异步日志处理器 - 使用独立线程处理日志 I/O"""
@@ -98,6 +143,8 @@ class SamplingFilter(logging.Filter):
             return random.random() < self.sample_rate
         return True  # WARNING/ERROR/CRITICAL 全部记录
 
+
+# ==================== 日志配置 ====================
 
 def setup_high_performance_logger():
     """配置高性能日志系统"""
@@ -182,6 +229,305 @@ def setup_high_performance_logger():
 logger = setup_high_performance_logger()
 
 
+# ==================== 安全模块 ====================
+
+class SecurityManager:
+    """安全管理器 - 处理加密和鉴权"""
+    
+    def __init__(self):
+        self.users_file = os.path.join(SECURITY_DIR, 'users.json')
+        self.api_keys_file = os.path.join(SECURITY_DIR, 'api_keys.json')
+        self.encryption_key_file = os.path.join(SECURITY_DIR, 'encryption.key')
+        self._init_users()
+        self._init_encryption()
+        self._init_api_keys()
+    
+    def _init_users(self):
+        """初始化用户系统"""
+        if not os.path.exists(self.users_file):
+            # 创建默认用户
+            default_users = {
+                'admin': {
+                    'password_hash': self._hash_password('admin123'),
+                    'role': 'admin',
+                    'created_at': datetime.now().isoformat()
+                },
+                'user1': {
+                    'password_hash': self._hash_password('user123'),
+                    'role': 'user',
+                    'created_at': datetime.now().isoformat()
+                },
+                'user2': {
+                    'password_hash': self._hash_password('user123'),
+                    'role': 'user',
+                    'created_at': datetime.now().isoformat()
+                },
+                'user3': {
+                    'password_hash': self._hash_password('user123'),
+                    'role': 'user',
+                    'created_at': datetime.now().isoformat()
+                }
+            }
+            self._save_users(default_users)
+            logger.info("已创建默认用户 (admin/user1/user2/user3)")
+    
+    def _init_encryption(self):
+        """初始化加密密钥"""
+        if not os.path.exists(self.encryption_key_file):
+            key = Fernet.generate_key()
+            with open(self.encryption_key_file, 'wb') as f:
+                f.write(key)
+            logger.info("已生成新的加密密钥")
+        
+        with open(self.encryption_key_file, 'rb') as f:
+            self.key = f.read()
+        self.cipher = Fernet(self.key)
+    
+    def _init_api_keys(self):
+        """初始化 API Key"""
+        if not os.path.exists(self.api_keys_file):
+            api_keys = {
+                'key_admin_001': {'user': 'admin', 'role': 'admin'},
+                'key_user1_001': {'user': 'user1', 'role': 'user'},
+                'key_user2_001': {'user': 'user2', 'role': 'user'},
+                'key_user3_001': {'user': 'user3', 'role': 'user'}
+            }
+            with open(self.api_keys_file, 'w', encoding='utf-8') as f:
+                json.dump(api_keys, f, indent=2, ensure_ascii=False)
+            logger.info("已创建默认 API Keys")
+    
+    def _hash_password(self, password: str) -> str:
+        """密码哈希"""
+        return hashlib.sha256(password.encode()).hexdigest()
+    
+    def authenticate(self, username: str, password: str) -> Optional[str]:
+        """用户认证，返回 JWT Token"""
+        users = self._load_users()
+        
+        if username not in users:
+            return None
+        
+        user = users[username]
+        if user['password_hash'] != self._hash_password(password):
+            return None
+        
+        # 生成 JWT Token
+        token = jwt.encode({
+            'username': username,
+            'role': user['role'],
+            'exp': datetime.now() + timedelta(hours=app.config['JWT_EXPIRATION_HOURS'])
+        }, app.config['SECRET_KEY'], algorithm='HS256')
+        
+        # 将 bytes 解码为字符串
+        if isinstance(token, bytes):
+            token = token.decode('utf-8')
+        
+        logger.info(f"用户 {username} 认证成功")
+        return token
+    
+    def verify_token(self, token: str) -> Optional[Dict]:
+        """验证 JWT Token"""
+        try:
+            payload = jwt.decode(token, app.config['SECRET_KEY'], algorithms=['HS256'])
+            return payload
+        except jwt.ExpiredSignatureError:
+            logger.warning("Token 已过期")
+            return None
+        except jwt.InvalidTokenError:
+            logger.warning("Token 无效")
+            return None
+    
+    def verify_api_key(self, api_key: str) -> Optional[Dict]:
+        """验证 API Key"""
+        try:
+            with open(self.api_keys_file, 'r', encoding='utf-8') as f:
+                api_keys = json.load(f)
+            
+            if api_key in api_keys:
+                return api_keys[api_key]
+            return None
+        except Exception as e:
+            logger.error(f"验证 API Key 失败：{e}")
+            return None
+    
+    def encrypt_data(self, data: dict) -> str:
+        """加密数据"""
+        json_data = json.dumps(data, ensure_ascii=False)
+        encrypted = self.cipher.encrypt(json_data.encode())
+        return base64.b64encode(encrypted).decode()
+    
+    def decrypt_data(self, encrypted_data: str) -> dict:
+        """解密数据"""
+        try:
+            decoded = base64.b64decode(encrypted_data)
+            decrypted = self.cipher.decrypt(decoded)
+            return json.loads(decrypted.decode())
+        except Exception as e:
+            logger.error(f"解密失败：{e}")
+            raise ValueError("数据解密失败")
+    
+    def _load_users(self) -> dict:
+        """加载用户数据"""
+        try:
+            with open(self.users_file, 'r', encoding='utf-8') as f:
+                return json.load(f)
+        except:
+            return {}
+    
+    def _save_users(self, users: dict):
+        """保存用户数据"""
+        with open(self.users_file, 'w', encoding='utf-8') as f:
+            json.dump(users, f, indent=2, ensure_ascii=False)
+    
+    def add_user(self, username: str, password: str, role: str = 'user') -> bool:
+        """添加新用户"""
+        users = self._load_users()
+        if username in users:
+            return False
+        
+        users[username] = {
+            'password_hash': self._hash_password(password),
+            'role': role,
+            'created_at': datetime.now().isoformat()
+        }
+        self._save_users(users)
+        logger.info(f"已添加用户：{username}")
+        return True
+    
+    def generate_api_key(self, username: str) -> Optional[str]:
+        """为用户生成新的 API Key"""
+        users = self._load_users()
+        if username not in users:
+            return None
+        
+        api_key = f"key_{username}_{secrets.token_hex(8)}"
+        try:
+            with open(self.api_keys_file, 'r', encoding='utf-8') as f:
+                api_keys = json.load(f)
+            
+            api_keys[api_key] = {'user': username, 'role': users[username]['role']}
+            with open(self.api_keys_file, 'w', encoding='utf-8') as f:
+                json.dump(api_keys, f, indent=2, ensure_ascii=False)
+            
+            logger.info(f"已为用户 {username} 生成 API Key: {api_key}")
+            return api_key
+        except Exception as e:
+            logger.error(f"生成 API Key 失败：{e}")
+            return None
+
+
+# 全局安全管理器
+security_manager = SecurityManager()
+
+
+@auth.verify_token
+def verify_token(token):
+    """JWT Token 验证回调"""
+    payload = security_manager.verify_token(token)
+    if payload:
+        return payload['username']
+    return None
+
+
+# ==================== 加密解密接口 ====================
+
+@app.route('/api/encrypt', methods=['POST'])
+@limiter.limit("20 per minute")
+def encrypt_endpoint():
+    """数据加密接口"""
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({'error': '无效的 JSON 数据'}), 400
+        
+        encrypted = security_manager.encrypt_data(data)
+        return jsonify({
+            'status': 'success',
+            'encrypted_data': encrypted,
+            'timestamp': datetime.now().isoformat()
+        })
+    except Exception as e:
+        logger.error(f"加密失败：{e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/decrypt', methods=['POST'])
+@limiter.limit("20 per minute")
+def decrypt_endpoint():
+    """数据解密接口"""
+    try:
+        data = request.get_json()
+        if not data or 'encrypted_data' not in data:
+            return jsonify({'error': '缺少 encrypted_data 参数'}), 400
+        
+        decrypted = security_manager.decrypt_data(data['encrypted_data'])
+        return jsonify({
+            'status': 'success',
+            'decrypted_data': decrypted,
+            'timestamp': datetime.now().isoformat()
+        })
+    except Exception as e:
+        logger.error(f"解密失败：{e}")
+        return jsonify({'error': str(e)}), 500
+
+
+# ==================== 认证接口 ====================
+
+@app.route('/api/auth/login', methods=['POST'])
+@limiter.limit("10 per minute")
+def login():
+    """用户登录接口"""
+    try:
+        data = request.get_json()
+        if not data or 'username' not in data or 'password' not in data:
+            return jsonify({'error': '缺少用户名或密码'}), 400
+        
+        token = security_manager.authenticate(data['username'], data['password'])
+        if token:
+            return jsonify({
+                'status': 'success',
+                'token': token,
+                'expires_in': app.config['JWT_EXPIRATION_HOURS'],
+                'timestamp': datetime.now().isoformat()
+            })
+        else:
+            return jsonify({'error': '用户名或密码错误'}), 401
+    except Exception as e:
+        logger.error(f"登录失败：{e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/auth/apikey', methods=['POST'])
+@limiter.limit("5 per minute")
+def generate_api_key():
+    """生成 API Key 接口"""
+    try:
+        # 需要 JWT Token 认证
+        auth_header = request.headers.get('Authorization')
+        if not auth_header or not auth_header.startswith('Bearer '):
+            return jsonify({'error': '需要 JWT Token 认证'}), 401
+        
+        token = auth_header.split(' ')[1]
+        payload = security_manager.verify_token(token)
+        if not payload:
+            return jsonify({'error': 'Token 无效或已过期'}), 401
+        
+        api_key = security_manager.generate_api_key(payload['username'])
+        if api_key:
+            return jsonify({
+                'status': 'success',
+                'api_key': api_key,
+                'timestamp': datetime.now().isoformat()
+            })
+        else:
+            return jsonify({'error': '生成 API Key 失败'}), 500
+    except Exception as e:
+        logger.error(f"生成 API Key 失败：{e}")
+        return jsonify({'error': str(e)}), 500
+
+
+# ==================== 请求统计 ====================
+
 class RequestStats:
     """请求统计类（线程安全）"""
     
@@ -212,288 +558,344 @@ class RequestStats:
 request_stats = RequestStats()
 
 
-@app.route('/api/receive', methods=['POST'])
-def receive_data():
-    """
-    接收数据的 API 接口
-    支持 JSON 格式数据
-    """
-    start_time = datetime.now()
-    
-    try:
-        # 获取请求数据
-        if request.is_json:
-            data = request.get_json()
-        else:
-            data = request.form.to_dict()
-        
-        # 生成时间戳文件名
-        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S_%f')
-        filename = f'data_{timestamp}.json'
-        filepath = os.path.join(DATA_DIR, filename)
-        
-        # 添加接收时间戳
-        data['received_at'] = datetime.now().isoformat()
-        
-        # 保存到文件
-        with open(filepath, 'w', encoding='utf-8') as f:
-            json.dump(data, f, ensure_ascii=False, indent=2)
-        
-        # 更新统计
-        request_stats.increment()
-        
-        # 计算处理耗时
-        process_time = (datetime.now() - start_time).total_seconds()
-        
-        # 详细日志（DEBUG 级别，会被采样）
-        logger.debug(f"数据保存成功 - 文件：{filename}, 大小：{len(str(data))} 字节，耗时：{process_time*1000:.2f}ms")
-        
-        # 慢请求告警（超过 100ms 的请求单独记录）
-        if process_time > 0.1:
-            logger.warning(f"慢请求检测 - 耗时：{process_time*1000:.2f}ms, 文件：{filename}")
-        
-        return jsonify({
-            'status': 'success',
-            'message': '数据接收成功',
-            'filename': filename,
-            'timestamp': data['received_at'],
-            'process_time_ms': round(process_time * 1000, 2)
-        })
-    
-    except Exception as e:
-        process_time = (datetime.now() - start_time).total_seconds()
-        logger.error(f"接收数据失败 - 错误：{str(e)}, 耗时：{process_time*1000:.2f}ms", exc_info=True)
-        return jsonify({
-            'status': 'error',
-            'message': str(e)
-        }), 500
-
+# ==================== 健康检查接口 ====================
 
 @app.route('/api/health', methods=['GET'])
 def health_check():
     """健康检查接口"""
     return jsonify({
         'status': 'healthy',
-        'service': 'Flask Data Server v2.0',
+        'service': 'Flask Data Server v3.0',
         'timestamp': datetime.now().isoformat(),
-        'total_requests': request_stats.count,
-        'uptime': 'running'
+        'features': ['JWT Auth', 'API Key', 'AES Encryption']
     })
 
 
-@app.route('/api/logs', methods=['GET'])
-def get_logs():
-    """获取最近的日志"""
+# ==================== 数据接收接口 ====================
+
+@app.route('/api/receive', methods=['POST'])
+def receive_data():
+    """普通数据接收接口"""
+    request_stats.increment()
     try:
-        log_files = sorted(os.listdir(LOG_DIR))
-        if not log_files:
-            return jsonify({'logs': [], 'message': '暂无日志'})
+        data = request.get_json()
+        if not data:
+            return jsonify({'error': '无效的 JSON 数据'}), 400
         
-        # 读取最新的日志文件
-        latest_log = log_files[-1]
-        with open(os.path.join(LOG_DIR, latest_log), 'r', encoding='utf-8') as f:
-            lines = f.readlines()[-100:]  # 返回最后 100 行
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S_%f')
+        filename = f'data_{timestamp}.json'
+        filepath = os.path.join(DATA_DIR, filename)
         
+        with open(filepath, 'w', encoding='utf-8') as f:
+            json.dump(data, f, indent=2, ensure_ascii=False)
+        
+        logger.info(f"成功接收数据：{filename}")
         return jsonify({
-            'logs': ''.join(lines),
-            'file': latest_log
+            'status': 'success',
+            'message': '数据接收成功',
+            'filename': filename,
+            'timestamp': datetime.now().isoformat()
         })
     except Exception as e:
-        logger.error(f"获取日志失败：{str(e)}")
+        logger.error(f"数据接收失败：{e}")
         return jsonify({'error': str(e)}), 500
 
 
-@app.route('/api/stats', methods=['GET'])
-def get_stats():
-    """获取服务器统计信息"""
-    return jsonify({
-        'total_requests': request_stats.count,
-        'current_time': datetime.now().isoformat(),
-        'version': '2.0.0',
-        'features': [
-            '异步日志处理',
-            '日志采样（10%）',
-            '结构化 JSON 日志',
-            '慢请求检测',
-            '线程安全统计',
-            '日志轮转'
-        ]
-    })
+@app.route('/api/receive/secure', methods=['POST'])
+@auth.login_required
+@limiter.limit("50 per minute")
+def receive_data_secure():
+    """安全数据接收接口 (JWT 认证)"""
+    request_stats.increment()
+    try:
+        username = auth.current_user()
+        data = request.get_json()
+        
+        if not data:
+            return jsonify({'error': '无效的 JSON 数据'}), 400
+        
+        # 检查是否为加密数据
+        is_encrypted = data.get('encrypted', False)
+        if is_encrypted:
+            encrypted_data = data.get('data', '')
+            try:
+                data = security_manager.decrypt_data(encrypted_data)
+            except Exception as e:
+                return jsonify({'error': '数据解密失败'}), 400
+        
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S_%f')
+        filename = f'secure_{username}_{timestamp}.json'
+        filepath = os.path.join(DATA_DIR, filename)
+        
+        save_data = {
+            'metadata': {
+                'username': username,
+                'received_at': datetime.now().isoformat(),
+                'encrypted': is_encrypted
+            },
+            'payload': data
+        }
+        
+        with open(filepath, 'w', encoding='utf-8') as f:
+            json.dump(save_data, f, indent=2, ensure_ascii=False)
+        
+        logger.info(f"用户 {username} - 安全接收数据：{filename}")
+        return jsonify({
+            'status': 'success',
+            'message': '数据接收成功',
+            'filename': filename,
+            'request_id': secrets.token_hex(8),
+            'timestamp': datetime.now().isoformat(),
+            'elapsed_ms': 0
+        })
+    except Exception as e:
+        logger.error(f"安全数据接收失败：{e}")
+        return jsonify({'error': str(e)}), 500
 
 
-# ==================== 新增专用传感器 API 接口 ====================
+@app.route('/api/receive/apikey', methods=['POST'])
+@limiter.limit("50 per minute")
+def receive_data_apikey():
+    """API Key 认证数据接收接口"""
+    request_stats.increment()
+    try:
+        api_key = request.headers.get('X-API-Key')
+        if not api_key:
+            return jsonify({'error': '缺少 X-API-Key 请求头'}), 401
+        
+        key_info = security_manager.verify_api_key(api_key)
+        if not key_info:
+            return jsonify({'error': '无效的 API Key'}), 401
+        
+        username = key_info['user']
+        data = request.get_json()
+        
+        if not data:
+            return jsonify({'error': '无效的 JSON 数据'}), 400
+        
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S_%f')
+        filename = f'apikey_{username}_{timestamp}.json'
+        filepath = os.path.join(DATA_DIR, filename)
+        
+        save_data = {
+            'metadata': {
+                'username': username,
+                'received_at': datetime.now().isoformat(),
+                'api_key_auth': True
+            },
+            'payload': data
+        }
+        
+        with open(filepath, 'w', encoding='utf-8') as f:
+            json.dump(save_data, f, indent=2, ensure_ascii=False)
+        
+        logger.info(f"用户 {username} (API Key) - 接收数据：{filename}")
+        return jsonify({
+            'status': 'success',
+            'message': '数据接收成功',
+            'filename': filename,
+            'request_id': secrets.token_hex(8),
+            'timestamp': datetime.now().isoformat(),
+            'elapsed_ms': 0
+        })
+    except Exception as e:
+        logger.error(f"API Key 数据接收失败：{e}")
+        return jsonify({'error': str(e)}), 500
 
-def save_sensor_data(sensor_type: str, data: Dict[str, Any]) -> str:
-    """
-    保存传感器数据到独立目录
-    :param sensor_type: 传感器类型
-    :param data: 数据内容
-    :return: 文件名
-    """
-    # 为不同类型的传感器创建独立目录
-    sensor_dir = os.path.join(DATA_DIR, sensor_type)
-    os.makedirs(sensor_dir, exist_ok=True)
+
+# ==================== 传感器专用接口 ====================
+
+def save_sensor_data(data: dict, sensor_type: str) -> str:
+    """保存传感器数据到独立目录"""
+    sensor_dirs = {
+        'skin': 'skin_sensor',
+        'environment': 'environment',
+        'device': 'device'
+    }
     
-    # 生成带时间戳的文件名
-    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S_%f')
-    filename = f'{sensor_type}_{timestamp}.json'
-    filepath = os.path.join(sensor_dir, filename)
+    dir_name = sensor_dirs.get(sensor_type, 'data')
+    save_dir = os.path.join(app.config['DATA_DIR'], dir_name)
     
-    # 添加元数据
-    data['received_at'] = datetime.now().isoformat()
-    data['sensor_type'] = sensor_type
+    if not os.path.exists(save_dir):
+        os.makedirs(save_dir, exist_ok=True)
     
-    # 保存到文件
+    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S_%f')[:-3]
+    filename = f"data_{timestamp}.json"
+    filepath = os.path.join(save_dir, filename)
+    
     with open(filepath, 'w', encoding='utf-8') as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
     
+    logger.info(f"成功保存 {sensor_type} 数据：{filename}")
     return filename
 
 
 @app.route('/api/sensor/skin', methods=['POST'])
-def receive_skin_sensor():
-    """
-    皮肤传感器数据接口
-    接收：水分度、油亮度等数据
-    保存到：data/skin_sensor/ 目录
-    """
-    start_time = datetime.now()
-    
+@limiter.limit("100 per minute")
+def skin_sensor():
+    """皮肤传感器数据接口"""
     try:
-        if request.is_json:
-            data = request.get_json()
-        else:
-            data = request.form.to_dict()
+        data = request.get_json()
+        if not data:
+            return jsonify({'error': '无效的 JSON 数据'}), 400
         
         # 验证必要字段
         required_fields = ['moisture', 'oiliness']
         for field in required_fields:
             if field not in data:
-                return jsonify({
-                    'status': 'error',
-                    'message': f'缺少必要字段：{field}'
-                }), 400
+                return jsonify({'error': f'缺少必要字段: {field}'}), 400
+        
+        # 添加元数据
+        data['sensor_type'] = 'skin'
+        data['timestamp'] = datetime.now().isoformat()
         
         # 保存数据
-        filename = save_sensor_data('skin_sensor', data)
-        
-        process_time = (datetime.now() - start_time).total_seconds()
-        logger.info(f"皮肤传感器数据 - 文件：{filename}, 耗时：{process_time*1000:.2f}ms")
+        filename = save_sensor_data(data, 'skin')
         
         return jsonify({
             'status': 'success',
             'message': '皮肤传感器数据接收成功',
             'filename': filename,
-            'sensor_type': 'skin',
-            'process_time_ms': round(process_time * 1000, 2)
-        })
-    
+            'timestamp': datetime.now().isoformat()
+        }), 200
+        
     except Exception as e:
-        logger.error(f"皮肤传感器数据处理失败：{str(e)}", exc_info=True)
-        return jsonify({
-            'status': 'error',
-            'message': str(e)
-        }), 500
+        logger.error(f"皮肤传感器数据处理失败：{e}")
+        return jsonify({'error': str(e)}), 500
 
 
 @app.route('/api/sensor/environment', methods=['POST'])
-def receive_environment_sensor():
-    """
-    环境传感器数据接口
-    接收：湿度、光照度、温度等数据
-    保存到：data/environment/ 目录
-    """
-    start_time = datetime.now()
-    
+@limiter.limit("100 per minute")
+def environment_sensor():
+    """环境传感器数据接口"""
     try:
-        if request.is_json:
-            data = request.get_json()
-        else:
-            data = request.form.to_dict()
+        data = request.get_json()
+        if not data:
+            return jsonify({'error': '无效的 JSON 数据'}), 400
         
         # 验证必要字段
-        required_fields = ['humidity', 'light_lux']
+        required_fields = ['humidity', 'light_lux', 'temperature']
         for field in required_fields:
             if field not in data:
-                return jsonify({
-                    'status': 'error',
-                    'message': f'缺少必要字段：{field}'
-                }), 400
+                return jsonify({'error': f'缺少必要字段: {field}'}), 400
+        
+        # 添加元数据
+        data['sensor_type'] = 'environment'
+        data['timestamp'] = datetime.now().isoformat()
         
         # 保存数据
-        filename = save_sensor_data('environment', data)
-        
-        process_time = (datetime.now() - start_time).total_seconds()
-        logger.info(f"环境传感器数据 - 文件：{filename}, 耗时：{process_time*1000:.2f}ms")
+        filename = save_sensor_data(data, 'environment')
         
         return jsonify({
             'status': 'success',
             'message': '环境传感器数据接收成功',
             'filename': filename,
-            'sensor_type': 'environment',
-            'process_time_ms': round(process_time * 1000, 2)
-        })
-    
+            'timestamp': datetime.now().isoformat()
+        }), 200
+        
     except Exception as e:
-        logger.error(f"环境传感器数据处理失败：{str(e)}", exc_info=True)
-        return jsonify({
-            'status': 'error',
-            'message': str(e)
-        }), 500
+        logger.error(f"环境传感器数据处理失败：{e}")
+        return jsonify({'error': str(e)}), 500
 
 
 @app.route('/api/device/status', methods=['POST'])
-def receive_device_status():
-    """
-    设备状态数据接口
-    接收：设备 ID、运行状态、电量等信息
-    保存到：data/device/ 目录
-    """
-    start_time = datetime.now()
-    
+@limiter.limit("50 per minute")
+def device_status():
+    """设备状态接口"""
     try:
-        if request.is_json:
-            data = request.get_json()
-        else:
-            data = request.form.to_dict()
+        data = request.get_json()
+        if not data:
+            return jsonify({'error': '无效的 JSON 数据'}), 400
         
         # 验证必要字段
-        required_fields = ['device_id', 'status']
-        for field in required_fields:
-            if field not in data:
-                return jsonify({
-                    'status': 'error',
-                    'message': f'缺少必要字段：{field}'
-                }), 400
+        if 'device_id' not in data:
+            return jsonify({'error': '缺少必要字段: device_id'}), 400
+        
+        # 添加元数据
+        data['sensor_type'] = 'device'
+        data['timestamp'] = datetime.now().isoformat()
         
         # 保存数据
-        filename = save_sensor_data('device', data)
-        
-        process_time = (datetime.now() - start_time).total_seconds()
-        logger.info(f"设备状态数据 - 文件：{filename}, 耗时：{process_time*1000:.2f}ms")
+        filename = save_sensor_data(data, 'device')
         
         return jsonify({
             'status': 'success',
             'message': '设备状态数据接收成功',
             'filename': filename,
-            'sensor_type': 'device',
-            'process_time_ms': round(process_time * 1000, 2)
-        })
-    
+            'timestamp': datetime.now().isoformat()
+        }), 200
+        
     except Exception as e:
-        logger.error(f"设备状态数据处理失败：{str(e)}", exc_info=True)
-        return jsonify({
-            'status': 'error',
-            'message': str(e)
-        }), 500
+        logger.error(f"设备状态数据处理失败：{e}")
+        return jsonify({'error': str(e)}), 500
 
+
+# ==================== 数据统计接口 ====================
+
+@app.route('/api/stats', methods=['GET'])
+def get_stats():
+    """获取数据统计信息"""
+    try:
+        data_dir = app.config['DATA_DIR']
+        stats = {
+            'total_files': 0,
+            'total_size': 0,
+            'directories': {}
+        }
+        
+        if os.path.exists(data_dir):
+            for root, dirs, files in os.walk(data_dir):
+                for file in files:
+                    if file.endswith('.json'):
+                        filepath = os.path.join(root, file)
+                        stats['total_files'] += 1
+                        stats['total_size'] += os.path.getsize(filepath)
+                        
+                        # 统计各目录文件数
+                        dir_name = os.path.basename(root)
+                        if dir_name not in stats['directories']:
+                            stats['directories'][dir_name] = 0
+                        stats['directories'][dir_name] += 1
+        
+        stats['total_size_mb'] = round(stats['total_size'] / (1024 * 1024), 2)
+        
+        return jsonify({
+            'status': 'success',
+            'stats': stats,
+            'timestamp': datetime.now().isoformat()
+        })
+        
+    except Exception as e:
+        logger.error(f"获取统计信息失败：{e}")
+        return jsonify({'error': str(e)}), 500
+
+
+# ==================== 主程序入口 ====================
 
 if __name__ == '__main__':
-    logger.info("=" * 60)
-    logger.info("Flask 数据服务器 v2.0 启动...")
-    logger.info("高性能模式已启用：异步日志 | 采样过滤 | 结构化输出")
-    logger.info("=" * 60)
+    # 打印启动信息
+    print("=" * 60)
+    print("Flask 数据服务器 v3.0 - 安全增强版")
+    print("=" * 60)
+    print(f"数据保存目录：{os.path.abspath(DATA_DIR)}")
+    print(f"日志目录：{os.path.abspath(LOG_DIR)}")
+    print(f"安全配置目录：{os.path.abspath(SECURITY_DIR)}")
+    print("=" * 60)
+    print("默认用户账户：")
+    print("  - admin / admin123 (管理员)")
+    print("  - user1 / user123 (普通用户)")
+    print("  - user2 / user123 (普通用户)")
+    print("  - user3 / user123 (普通用户)")
+    print("=" * 60)
+    print("API 接口：")
+    print("  认证接口：/api/auth/login")
+    print("  数据接收（普通）：/api/receive")
+    print("  数据接收（JWT 认证）：/api/receive/secure")
+    print("  数据接收（API Key）：/api/receive/apikey")
+    print("  数据加密：/api/encrypt")
+    print("  数据解密：/api/decrypt")
+    print("  健康检查：/api/health")
+    print("=" * 60)
     
-    # 生产环境建议使用 gunicorn 等 WSGI 服务器
-    # 例如：gunicorn -w 4 -b 0.0.0.0:5000 app:app
+    # 启动服务器
     app.run(host='0.0.0.0', port=5000, debug=False, threaded=True)
