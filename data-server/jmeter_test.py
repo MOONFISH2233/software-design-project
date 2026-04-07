@@ -169,13 +169,13 @@ class JMETERTester:
         for t in threads:
             t.join(timeout=2)
         
-        # 统计结果
-        self.print_results()
+        # 统计结果（传入 duration 参数）
+        self.print_results(duration)
         
         # 保存结果到 CSV
         self.save_results_to_csv()
     
-    def print_results(self):
+    def print_results(self, test_duration):
         """打印测试结果"""
         if not self.results:
             print("❌ 没有测试结果")
@@ -203,8 +203,7 @@ class JMETERTester:
         else:
             avg_time = min_time = max_time = median_time = p95_time = 0
         
-        # 计算 QPS
-        test_duration = max(r['elapsed'] for r in self.results) if self.results else 1
+        # 计算 QPS（使用实际测试持续时间，而不是最大响应时间）
         qps = total_requests / test_duration if test_duration > 0 else 0
         
         print("\n" + "=" * 60)
@@ -223,7 +222,7 @@ class JMETERTester:
         print(f"  最大：{max_time*1000:.2f}ms")
         print(f"  95 百分位：{p95_time*1000:.2f}ms")
         print("=" * 60)
-    
+
     def save_results_to_csv(self):
         """保存结果到 CSV 文件"""
         if not self.results:
