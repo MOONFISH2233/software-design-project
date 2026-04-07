@@ -7,7 +7,7 @@ import requests
 import threading
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from statistics import mean, median, percentile
+from statistics import mean, median
 import json
 
 
@@ -140,8 +140,19 @@ class LoadTester:
             median_duration = median(durations)
             min_duration = min(durations)
             max_duration = max(durations)
-            p95_duration = percentile(durations, 95) if hasattr(__builtins__, 'percentile') else sorted(durations)[int(len(durations)*0.95)]
-            p99_duration = percentile(durations, 99) if hasattr(__builtins__, 'percentile') else sorted(durations)[int(len(durations)*0.99)]
+            
+            # 手动计算百分位数
+            sorted_durations = sorted(durations)
+            n = len(sorted_durations)
+            p95_index = int(n * 0.95)
+            p99_index = int(n * 0.99)
+            
+            # 确保索引不越界
+            p95_index = min(p95_index, n - 1)
+            p99_index = min(p99_index, n - 1)
+            
+            p95_duration = sorted_durations[p95_index]
+            p99_duration = sorted_durations[p99_index]
             
             print(f"\n⏱️ 响应时间统计 (毫秒):")
             print(f"  平均值：{avg_duration:.2f} ms")
