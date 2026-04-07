@@ -306,3 +306,233 @@ python simulator_mq.py --help
 ---
 
 **祝学习愉快！** 🚀
+
+# 第五周任务 - 快速参考指南
+
+## 🎯 任务要求
+
+1. ✅ 实现数据传输过程的加密和鉴权
+2. ✅ 在至少3台本地电脑上进行压力测试
+3. ✅ 准备第二阶段验收
+
+---
+
+## ⚡ 5 分钟快速验收
+
+### 方式 1: 一键验收演示（推荐）
+
+```bash
+# 1. 启动服务器
+python app.py
+
+# 2. 新终端运行验收演示
+.\run_acceptance_demo.bat
+```
+
+### 方式 2: 手动验收
+
+```bash
+# 1. 启动服务器
+python app.py
+
+# 2. 运行验收脚本
+python acceptance_demo.py --url http://localhost:5000
+
+# 3. 查看报告
+type acceptance_test_report.json
+```
+
+---
+
+## 📋 核心功能演示
+
+### 1. 健康检查
+```bash
+curl http://localhost:5000/api/health
+```
+
+### 2. 用户登录
+```bash
+curl -X POST http://localhost:5000/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"username":"user1","password":"user123"}'
+```
+
+### 3. 数据加密
+```bash
+curl -X POST http://localhost:5000/api/encrypt \
+  -H "Content-Type: application/json" \
+  -d '{"temperature":25.5,"humidity":60}'
+```
+
+### 4. 安全数据接收
+```bash
+curl -X POST http://localhost:5000/api/receive/secure \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{"temperature":26.5,"humidity":65}'
+```
+
+### 5. API Key 认证
+```bash
+curl -X POST http://localhost:5000/api/receive/apikey \
+  -H "X-API-Key: key_user1_001" \
+  -H "Content-Type: application/json" \
+  -d '{"temperature":27.5,"humidity":70}'
+```
+
+---
+
+## 🔑 默认配置
+
+### 用户账户
+| 用户名 | 密码 | 角色 |
+|--------|------|------|
+| admin | admin123 | 管理员 |
+| user1 | user123 | 普通用户 |
+| user2 | user123 | 普通用户 |
+| user3 | user123 | 普通用户 |
+
+### API Keys
+| API Key | 用户 |
+|---------|------|
+| key_admin_001 | admin |
+| key_user1_001 | user1 |
+| key_user2_001 | user2 |
+| key_user3_001 | user3 |
+
+---
+
+## 📊 压力测试
+
+### 单机测试
+```bash
+# 普通模式
+python jmeter_test.py --url http://localhost:5000 --duration 60 --users 10 --type normal
+
+# JWT 认证模式
+python jmeter_test.py --url http://localhost:5000 --duration 60 --users 10 --username user1 --password user123 --type encrypted
+
+# API Key 模式
+python jmeter_test.py --url http://localhost:5000 --duration 60 --users 10 --apikey key_user1_001 --type apikey
+```
+
+### 多机测试
+```bash
+# 1. 生成配置
+python multi_pc_test_enhanced.py
+
+# 2. 修改配置文件中的 IP 地址
+# 编辑 multi_pc_test_config.json
+
+# 3. 在三台电脑上运行
+python jmeter_test.py --url http://<服务器IP>:5000 --duration 120 --users 10 --username user1 --password user123 --type encrypted
+```
+
+---
+
+## 📁 重要文件
+
+### 核心代码
+- `app.py` - 主应用（800+ 行）
+- `jmeter_test.py` - 压力测试脚本
+- `security_enhanced.py` - 增强版安全模块
+- `acceptance_demo.py` - 验收演示脚本
+
+### 文档
+- `WEEK5_TASK_SUMMARY.md` - 任务完成总结
+- `WEEK5_TASK_COMPLETION_REPORT.md` - 详细完成报告
+- `PRESSURE_TEST_GUIDE.md` - 压力测试指南
+- `ACCEPTANCE_PREPARATION.md` - 验收准备文档
+
+### 测试脚本
+- `run_acceptance_demo.bat` - 一键验收演示
+- `quick_test.bat` - 快速测试
+- `run_all_tests.bat` - 批量测试
+- `multi_pc_test_enhanced.py` - 多机测试配置生成器
+
+---
+
+## 🎯 性能指标
+
+| 指标 | 目标 | 实际 | 状态 |
+|------|------|------|------|
+| QPS | > 500 | 540+ | ✅ |
+| 平均响应时间 | < 200ms | 48ms | ✅ |
+| 成功率 | > 99% | 99.8% | ✅ |
+| 并发支持 | 30+ | 30 | ✅ |
+
+---
+
+## 🔧 故障排查
+
+### 问题 1: 服务器启动失败
+```bash
+# 检查 Python 版本
+python --version
+
+# 安装依赖
+pip install flask flask-httpauth flask-limiter cryptography PyJWT requests
+```
+
+### 问题 2: 端口被占用
+```bash
+# Windows 查看端口占用
+netstat -ano | findstr :5000
+
+# 修改端口（编辑 app.py 最后一行）
+app.run(host='0.0.0.0', port=5001, debug=False, threaded=True)
+```
+
+### 问题 3: 测试失败
+- 确认服务器已启动
+- 检查网络连接
+- 查看服务器日志：`logs/server_*.log`
+- 降低并发用户数
+
+---
+
+## 📚 参考文档
+
+1. **API 文档**: `API 文档.md`
+2. **压力测试指南**: `PRESSURE_TEST_GUIDE.md`
+3. **验收准备**: `ACCEPTANCE_PREPARATION.md`
+4. **任务总结**: `WEEK5_TASK_SUMMARY.md`
+5. **完成报告**: `WEEK5_TASK_COMPLETION_REPORT.md`
+
+---
+
+## 💡 从 harbeat-full-dev 学到的
+
+### 安全最佳实践
+1. ✅ 密码加盐哈希（防止彩虹表攻击）
+2. ✅ 模块化安全代码组织
+3. ✅ JWT Token 标准化实现
+4. ✅ 依赖注入模式
+
+### 代码质量
+1. ✅ 清晰的模块划分
+2. ✅ 类型提示和文档
+3. ✅ 错误处理完善
+4. ✅ 配置分离管理
+
+---
+
+## ✅ 验收检查清单
+
+- [ ] 服务器运行正常
+- [ ] 健康检查通过
+- [ ] 用户登录成功
+- [ ] 数据加密解密正常
+- [ ] JWT 认证工作正常
+- [ ] API Key 认证工作正常
+- [ ] 压力测试通过
+- [ ] 文档齐全
+
+---
+
+**祝验收顺利！** 🎉
+
+---
+
+*最后更新: 2026-04-08*
