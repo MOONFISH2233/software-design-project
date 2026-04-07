@@ -39,6 +39,12 @@ auth = HTTPTokenAuth(scheme='Bearer')
 # 环境变量 RATE_LIMIT_ENABLED 控制是否启用限流（默认启用）
 rate_limit_enabled = os.environ.get('RATE_LIMIT_ENABLED', 'true').lower() == 'true'
 
+
+def get_rate_limit(normal_limit, load_test_limit="10000 per minute"):
+    """根据模式返回限流配置"""
+    return load_test_limit if not rate_limit_enabled else normal_limit
+
+
 if rate_limit_enabled:
     limiter = Limiter(
         app=app,
@@ -432,49 +438,17 @@ def verify_token(token):
 # ==================== 加密解密接口 ====================
 
 @app.route('/api/encrypt', methods=['POST'])
-@limiter.limit("20 per minute")
-def encrypt_endpoint():
-    """数据加密接口"""
-    try:
-        data = request.get_json()
-        if not data:
-            return jsonify({'error': '无效的 JSON 数据'}), 400
-        
-        encrypted = security_manager.encrypt_data(data)
-        return jsonify({
-            'status': 'success',
-            'encrypted_data': encrypted,
-            'timestamp': datetime.now().isoformat()
-        })
-    except Exception as e:
-        logger.error(f"加密失败：{e}")
-        return jsonify({'error': str(e)}), 500
-
+@limiter.limit(get_rate_limit("20 per minute"))
+def encrypt_data():
 
 @app.route('/api/decrypt', methods=['POST'])
-@limiter.limit("20 per minute")
-def decrypt_endpoint():
-    """数据解密接口"""
-    try:
-        data = request.get_json()
-        if not data or 'encrypted_data' not in data:
-            return jsonify({'error': '缺少 encrypted_data 参数'}), 400
-        
-        decrypted = security_manager.decrypt_data(data['encrypted_data'])
-        return jsonify({
-            'status': 'success',
-            'decrypted_data': decrypted,
-            'timestamp': datetime.now().isoformat()
-        })
-    except Exception as e:
-        logger.error(f"解密失败：{e}")
-        return jsonify({'error': str(e)}), 500
-
+@limiter.limit(get_rate_limit("10 per minute"))
+def decrypt_data():
 
 # ==================== 认证接口 ====================
 
 @app.route('/api/auth/login', methods=['POST'])
-@limiter.limit("10 per minute")
+@limiter.limit(get_rate_limit("20 per minute"))
 def login():
     """用户登录接口"""
     try:
@@ -498,7 +472,7 @@ def login():
 
 
 @app.route('/api/auth/apikey', methods=['POST'])
-@limiter.limit("5 per minute")
+@limiter.limit(get_rate_limit("5 per minute"))
 def generate_api_key():
     """生成 API Key 接口"""
     try:
@@ -561,6 +535,7 @@ request_stats = RequestStats()
 # ==================== 健康检查接口 ====================
 
 @app.route('/api/health', methods=['GET'])
+@limiter.limit(get_rate_limit("5 per minute"))
 def health_check():
     """健康检查接口"""
     return jsonify({
@@ -574,6 +549,7 @@ def health_check():
 # ==================== 数据接收接口 ====================
 
 @app.route('/api/receive', methods=['POST'])
+@limiter.limit(get_rate_limit("100 per minute"))
 def receive_data():
     """普通数据接收接口"""
     request_stats.increment()
@@ -603,7 +579,7 @@ def receive_data():
 
 @app.route('/api/receive/secure', methods=['POST'])
 @auth.login_required
-@limiter.limit("50 per minute")
+@limiter.limit(get_rate_limit("50 per minute"))
 def receive_data_secure():
     """安全数据接收接口 (JWT 认证)"""
     request_stats.increment()
@@ -654,7 +630,7 @@ def receive_data_secure():
 
 
 @app.route('/api/receive/apikey', methods=['POST'])
-@limiter.limit("50 per minute")
+@limiter.limit(get_rate_limit("50 per minute"))
 def receive_data_apikey():
     """API Key 认证数据接收接口"""
     request_stats.increment()
@@ -731,7 +707,7 @@ def save_sensor_data(data: dict, sensor_type: str) -> str:
 
 
 @app.route('/api/sensor/skin', methods=['POST'])
-@limiter.limit("100 per minute")
+@limiter.limit(get_rate_limit("100 per minute"))
 def skin_sensor():
     """皮肤传感器数据接口"""
     try:
@@ -765,7 +741,7 @@ def skin_sensor():
 
 
 @app.route('/api/sensor/environment', methods=['POST'])
-@limiter.limit("100 per minute")
+@limiter.limit(get_rate_limit("100 per minute"))
 def environment_sensor():
     """环境传感器数据接口"""
     try:
@@ -799,7 +775,7 @@ def environment_sensor():
 
 
 @app.route('/api/device/status', methods=['POST'])
-@limiter.limit("50 per minute")
+@limiter.limit(get_rate_limit("50 per minute"))
 def device_status():
     """设备状态接口"""
     try:
