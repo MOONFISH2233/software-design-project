@@ -1,0 +1,33 @@
+[Unit]
+Description=Gunicorn Flask Data Server
+After=network.target
+
+[Service]
+Type=notify
+User=root
+Group=root
+WorkingDirectory=/root/course-project/week5/data-server
+Environment="PATH=/usr/local/bin:/usr/bin:/bin"
+ExecStart=/usr/local/bin/gunicorn -c gunicorn_config.py app:app
+ExecReload=/bin/kill -s HUP $MAINPID
+ExecStop=/bin/kill -s TERM $MAINPID
+
+# 重启策略
+Restart=on-failure
+RestartSec=10
+
+# 资源限制
+LimitNOFILE=65535
+LimitNPROC=4096
+
+# 安全增强
+PrivateTmp=true
+NoNewPrivileges=true
+
+# 日志
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=gunicorn-flask-data-server
+
+[Install]
+WantedBy=multi-user.target
