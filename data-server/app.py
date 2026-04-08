@@ -5,6 +5,7 @@ Flask 数据服务器 - 支持加密和鉴权
 """
 
 from flask import Flask, request, jsonify, send_from_directory
+from flask_cors import CORS
 from flask_httpauth import HTTPTokenAuth
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
@@ -28,6 +29,7 @@ import time
 from typing import Dict, Any, Optional
 
 app = Flask(__name__)
+CORS(app)  # 启用CORS支持，允许跨域请求
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', secrets.token_hex(32))
 app.config['JWT_EXPIRATION_HOURS'] = 24
 
