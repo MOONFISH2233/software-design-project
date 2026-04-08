@@ -14,25 +14,64 @@ import threading
 class RedisMQ:
     """基于 Redis Stream 的消息队列"""
     
-    def __init__(self, host='localhost', port=6379, db=0):
+    def __init__(self, host='localhost', port=6379, db=0, socket_timeout=5, socket_connect_timeout=5):
         """
         初始化 Redis MQ
         :param host: Redis 服务器地址
         :param port: Redis 端口
         :param db: Redis 数据库编号
+        :param socket_timeout: socket 超时时间（秒）
+        :param socket_connect_timeout: socket 连接超时时间（秒）
         """
-        self.redis_client = redis.Redis(host=host, port=port, db=db, decode_responses=True)
+        self.host = host
+        self.port = port
+        self.db = db
+        self.socket_timeout = socket_timeout
+        self.socket_connect_timeout = socket_connect_timeout
+        self.redis_client = None
         self.connected = False
     
     def connect(self):
         """连接到 Redis"""
         try:
-            self.redis_client.ping()
-            self.connected = True
-            print("✅ Redis 连接成功")
-            return True
-        except Exception as e:
+            print(f"🔄 正在连接 Redis: {self.host}:{self.port}...")
+            self.redis_client = redis.Redis(
+                host=self.host, 
+                port=self.port, 
+                db=self.db, 
+                decode_responses=True,
+                socket_timeout=self.socket_timeout,
+                socket_connect_timeout=self.socket_connect_timeout,
+                retry_on_timeout=False,  # 禁用自动重试
+                health_check_interval=0  # 禁用健康检查
+            )
+            # 使用 ping 测试连接，设置明确的超时
+            result = self.redis_client.ping()
+            if result:
+                self.connected = True
+                print("✅ Redis 连接成功")
+                return True
+            else:
+                print("❌ Redis ping 失败")
+                self.connected = False
+                return False
+        except redis.exceptions.TimeoutError:
+            print(f"❌ Redis 连接超时：无法在 {self.socket_connect_timeout} 秒内连接到 {self.host}:{self.port}")
+            print("💡 请检查：")
+            print("   1. 服务器 IP 地址是否正确")
+            print("   2. 防火墙是否开放 6379 端口")
+            print("   3. 阿里云安全组是否开放 6379 端口")
+            print("   4. Redis 服务是否正常运行")
+            self.connected = False
+            return False
+        except redis.exceptions.ConnectionError as e:
             print(f"❌ Redis 连接失败：{e}")
+            print("💡 请检查网络连接和 Redis 服务状态")
+            self.connected = False
+            return False
+        except Exception as e:
+            print(f"❌ Redis 连接异常：{type(e).__name__}: {e}")
+            print("💡 请检查网络连接和 Redis 服务状态")
             self.connected = False
             return False
     
@@ -264,7 +303,9 @@ def create_mq(mq_type='redis', **kwargs):
         return RedisMQ(
             host=kwargs.get('host', 'localhost'),
             port=kwargs.get('port', 6379),
-            db=kwargs.get('db', 0)
+            db=kwargs.get('db', 0),
+            socket_timeout=kwargs.get('socket_timeout', 5),
+            socket_connect_timeout=kwargs.get('socket_connect_timeout', 5)
         )
     elif mq_type == 'rabbitmq':
         return RabbitMQ(

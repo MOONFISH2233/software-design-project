@@ -1,0 +1,63 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual Environment
+venv/
+env/
+ENV/
+.venv
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+logs/*.log
+*.log
+
+# Data
+data/*.json
+data/*/*.json
+
+# Security (不要提交密钥)
+security/*.key
+security/*.pem
+.env
+
+# Test Results
+tests/stress_test_results_*.csv
+*.csv
+
+# Temporary Files
+backups/
+temp_*.py
+*.save
+
+# Documentation Build
+docs/_build/

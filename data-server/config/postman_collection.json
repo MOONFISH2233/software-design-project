@@ -1,0 +1,242 @@
+{
+  "info": {
+    "_postman_id": "flask-data-server-collection",
+    "name": "Flask 数据服务器 API",
+    "description": "用于接收传感器数据的 RESTful API 服务\n\n版本：v2.0\n最后更新：2026-04-01\n\n包含接口：\n- 传感器专用接口（皮肤/环境/设备，各自独立写文件）\n- 通用数据接收接口\n- 系统监控接口（健康检查/统计信息）\n- 日志管理接口",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://47.103.108.47:5000",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "传感器专用接口",
+      "description": "各传感器专用接口，每种数据独立写入不同目录",
+      "item": [
+        {
+          "name": "5. 皮肤传感器接口",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"moisture\": 65,\n    \"oiliness\": 35,\n    \"device_id\": \"skin_sensor_001\",\n    \"timestamp\": \"{{upload_time}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/sensor/skin",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "sensor",
+                "skin"
+              ]
+            },
+            "description": "皮肤传感器专用接口，数据写入 data/skin_sensor/ 目录\n\n必填字段：moisture（水分度 0-100%）、oiliness（油亮度 0-100%）"
+          },
+          "response": []
+        },
+        {
+          "name": "6. 皮肤传感器接口（缺少字段，应返回400）",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"device_id\": \"skin_sensor_001\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/sensor/skin",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "sensor",
+                "skin"
+              ]
+            },
+            "description": "测试缺少必填字段时的错误处理，期望返回 400"
+          },
+          "response": []
+        },
+        {
+          "name": "7. 环境传感器接口",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"humidity\": 55,\n    \"light_lux\": 650,\n    \"temperature\": 25.5,\n    \"device_id\": \"env_sensor_001\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/sensor/environment",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "sensor",
+                "environment"
+              ]
+            },
+            "description": "环境传感器专用接口，数据写入 data/environment/ 目录\n\n必填字段：humidity（湿度）、light_lux（光照度）"
+          },
+          "response": []
+        },
+        {
+          "name": "8. 设备状态接口",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"device_id\": \"mirror_001\",\n    \"status\": \"online\",\n    \"battery\": 85,\n    \"cpu_usage\": 32.5\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/device/status",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "device",
+                "status"
+              ]
+            },
+            "description": "设备状态专用接口，数据写入 data/device/ 目录\n\n必填字段：device_id（设备ID）、status（状态：online/offline/running/error/standby）"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "通用接口",
+      "description": "通用数据接收和系统接口",
+      "item": [
+        {
+          "name": "1. 通用数据接收接口",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"data\": {\n        \"sensor_type\": \"skin\",\n        \"moisture\": 65,\n        \"oiliness\": 35,\n        \"device_id\": \"sensor_001\"\n    },\n    \"description\": \"皮肤传感器数据\",\n    \"source\": \"local\",\n    \"upload_time\": \"{{upload_time}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/receive",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "receive"
+              ]
+            },
+            "description": "通用数据接收接口，接收任意格式数据并保存到 data/ 目录"
+          },
+          "response": []
+        },
+        {
+          "name": "2. 健康检查接口",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/health",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "health"
+              ]
+            },
+            "description": "检查服务器运行状态"
+          },
+          "response": []
+        },
+        {
+          "name": "3. 日志查询接口",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/logs",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "logs"
+              ]
+            },
+            "description": "获取最近的服务器日志（最后 100 行）"
+          },
+          "response": []
+        },
+        {
+          "name": "4. 统计信息接口",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/stats",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "stats"
+              ]
+            },
+            "description": "获取服务器运行统计信息"
+          },
+          "response": []
+        }
+      ]
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// 设置当前时间为 upload_time 变量",
+          "pm.variables.set('upload_time', new Date().toISOString());"
+        ]
+      }
+    }
+  ]
+}

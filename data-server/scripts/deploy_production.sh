@@ -23,13 +23,17 @@ NC='\033[0m' # No Color
 # ==================== 步骤 1: 安装依赖 ====================
 echo ""
 echo -e "${YELLOW}[1/6]${NC} 安装 Gunicorn 和 Gevent..."
-pip install gunicorn gevent --upgrade
+pip3 install gunicorn gevent --upgrade
 
 if [ $? -eq 0 ]; then
     echo -e "${GREEN}✅ 依赖安装成功${NC}"
 else
-    echo -e "${RED}❌ 依赖安装失败${NC}"
-    exit 1
+    echo -e "${RED}❌ 依赖安装失败，尝试使用 python3 -m pip${NC}"
+    python3 -m pip install gunicorn gevent --upgrade
+    if [ $? -ne 0 ]; then
+        echo -e "${RED}❌ 依赖安装失败${NC}"
+        exit 1
+    fi
 fi
 
 # ==================== 步骤 2: 停止旧服务 ====================

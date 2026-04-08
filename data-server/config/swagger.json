@@ -24,6 +24,10 @@
       "description": "数据上传和接收相关接口"
     },
     {
+      "name": "传感器接口",
+      "description": "各类传感器专用接口，每种传感器数据独立写入文件"
+    },
+    {
       "name": "系统监控",
       "description": "健康检查和状态监控接口"
     },
@@ -33,6 +37,117 @@
     }
   ],
   "paths": {
+    "/api/sensor/skin": {
+      "post": {
+        "tags": ["传感器接口"],
+        "summary": "皮肤传感器数据接口",
+        "description": "接收皮肤传感器数据（水分度、油亮度），写入 data/skin_sensor/ 独立目录",
+        "operationId": "receiveSkinSensor",
+        "requestBody": {
+          "description": "皮肤传感器数据",
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SkinSensorData"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "数据接收成功",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/SensorSuccessResponse" }
+              }
+            }
+          },
+          "400": {
+            "description": "缺少必填字段",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/sensor/environment": {
+      "post": {
+        "tags": ["传感器接口"],
+        "summary": "环境传感器数据接口",
+        "description": "接收环境传感器数据（湿度、光照度、温度），写入 data/environment/ 独立目录",
+        "operationId": "receiveEnvironmentSensor",
+        "requestBody": {
+          "description": "环境传感器数据",
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EnvironmentSensorData"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "数据接收成功",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/SensorSuccessResponse" }
+              }
+            }
+          },
+          "400": {
+            "description": "缺少必填字段",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/device/status": {
+      "post": {
+        "tags": ["传感器接口"],
+        "summary": "设备状态数据接口",
+        "description": "接收设备状态信息（设备ID、运行状态、电量等），写入 data/device/ 独立目录",
+        "operationId": "receiveDeviceStatus",
+        "requestBody": {
+          "description": "设备状态数据",
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DeviceStatusData"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "数据接收成功",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/SensorSuccessResponse" }
+              }
+            }
+          },
+          "400": {
+            "description": "缺少必填字段",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/receive": {
       "post": {
         "tags": ["数据接收"],
@@ -152,6 +267,106 @@
   },
   "components": {
     "schemas": {
+      "SkinSensorData": {
+        "type": "object",
+        "description": "皮肤传感器数据",
+        "required": ["moisture", "oiliness"],
+        "properties": {
+          "moisture": {
+            "type": "integer",
+            "description": "皮肤水分度（0-100%）",
+            "minimum": 0,
+            "maximum": 100,
+            "example": 65
+          },
+          "oiliness": {
+            "type": "integer",
+            "description": "皮肤油亮度（0-100%）",
+            "minimum": 0,
+            "maximum": 100,
+            "example": 35
+          },
+          "device_id": {
+            "type": "string",
+            "description": "设备ID",
+            "example": "skin_sensor_001"
+          },
+          "timestamp": {
+            "type": "string",
+            "description": "采集时间",
+            "example": "2026-04-01 20:00:00"
+          }
+        }
+      },
+      "EnvironmentSensorData": {
+        "type": "object",
+        "description": "环境传感器数据",
+        "required": ["humidity", "light_lux"],
+        "properties": {
+          "humidity": {
+            "type": "integer",
+            "description": "环境湿度（0-100%）",
+            "minimum": 0,
+            "maximum": 100,
+            "example": 55
+          },
+          "light_lux": {
+            "type": "integer",
+            "description": "环境光照度（Lux）",
+            "minimum": 0,
+            "maximum": 10000,
+            "example": 650
+          },
+          "temperature": {
+            "type": "number",
+            "description": "环境温度（℃）",
+            "example": 25.5
+          },
+          "device_id": {
+            "type": "string",
+            "description": "设备ID",
+            "example": "env_sensor_001"
+          }
+        }
+      },
+      "DeviceStatusData": {
+        "type": "object",
+        "description": "设备状态数据",
+        "required": ["device_id", "status"],
+        "properties": {
+          "device_id": {
+            "type": "string",
+            "description": "设备唯一标识",
+            "example": "mirror_001"
+          },
+          "status": {
+            "type": "string",
+            "description": "设备运行状态",
+            "enum": ["online", "offline", "running", "error", "standby"],
+            "example": "online"
+          },
+          "battery": {
+            "type": "integer",
+            "description": "电量百分比（0-100）",
+            "example": 85
+          },
+          "cpu_usage": {
+            "type": "number",
+            "description": "CPU使用率（%）",
+            "example": 32.5
+          }
+        }
+      },
+      "SensorSuccessResponse": {
+        "type": "object",
+        "properties": {
+          "status": { "type": "string", "example": "success" },
+          "message": { "type": "string", "example": "皮肤传感器数据接收成功" },
+          "filename": { "type": "string", "example": "skin_sensor_20260401_200000_123456.json" },
+          "sensor_type": { "type": "string", "example": "skin" },
+          "process_time_ms": { "type": "number", "example": 8.5 }
+        }
+      },
       "DataPayload": {
         "type": "object",
         "description": "数据上传负载",

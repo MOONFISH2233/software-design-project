@@ -219,6 +219,153 @@ class APITester:
         
         return report
     
+    def test_skin_sensor_api(self):
+        """测试皮肤传感器专用接口"""
+        print("\n" + "="*60)
+        print("测试 5: 皮肤传感器接口 POST /api/sensor/skin")
+        print("="*60)
+        
+        test_cases = [
+            {
+                "name": "正常皮肤数据",
+                "data": {"moisture": 65, "oiliness": 35, "device_id": "skin_001"},
+                "expect_status": 200
+            },
+            {
+                "name": "缺少必填字段（应返回400）",
+                "data": {"device_id": "skin_001"},
+                "expect_status": 400
+            },
+            {
+                "name": "边界值测试（水分100%）",
+                "data": {"moisture": 100, "oiliness": 0, "device_id": "skin_002"},
+                "expect_status": 200
+            }
+        ]
+        
+        for case in test_cases:
+            try:
+                response = self.session.post(
+                    f'{self.base_url}/api/sensor/skin',
+                    json=case['data'],
+                    timeout=10
+                )
+                success = response.status_code == case['expect_status']
+                result = {
+                    'test_name': f"皮肤传感器 - {case['name']}",
+                    'status_code': response.status_code,
+                    'success': success,
+                    'response_time_ms': round(response.elapsed.total_seconds() * 1000, 2),
+                    'response': response.json()
+                }
+            except Exception as e:
+                result = {
+                    'test_name': f"皮肤传感器 - {case['name']}",
+                    'status_code': 0,
+                    'success': False,
+                    'error': str(e)
+                }
+            self._print_result(result)
+            self.test_results.append(result)
+
+    def test_environment_sensor_api(self):
+        """测试环境传感器专用接口"""
+        print("\n" + "="*60)
+        print("测试 6: 环境传感器接口 POST /api/sensor/environment")
+        print("="*60)
+        
+        test_cases = [
+            {
+                "name": "正常环境数据",
+                "data": {"humidity": 55, "light_lux": 650, "temperature": 25.5, "device_id": "env_001"},
+                "expect_status": 200
+            },
+            {
+                "name": "缺少必填字段（应返回400）",
+                "data": {"temperature": 25.0},
+                "expect_status": 400
+            },
+            {
+                "name": "边界值测试（湿度0%，光照0）",
+                "data": {"humidity": 0, "light_lux": 0, "temperature": -20, "device_id": "env_002"},
+                "expect_status": 200
+            }
+        ]
+        
+        for case in test_cases:
+            try:
+                response = self.session.post(
+                    f'{self.base_url}/api/sensor/environment',
+                    json=case['data'],
+                    timeout=10
+                )
+                success = response.status_code == case['expect_status']
+                result = {
+                    'test_name': f"环境传感器 - {case['name']}",
+                    'status_code': response.status_code,
+                    'success': success,
+                    'response_time_ms': round(response.elapsed.total_seconds() * 1000, 2),
+                    'response': response.json()
+                }
+            except Exception as e:
+                result = {
+                    'test_name': f"环境传感器 - {case['name']}",
+                    'status_code': 0,
+                    'success': False,
+                    'error': str(e)
+                }
+            self._print_result(result)
+            self.test_results.append(result)
+
+    def test_device_status_api(self):
+        """测试设备状态专用接口"""
+        print("\n" + "="*60)
+        print("测试 7: 设备状态接口 POST /api/device/status")
+        print("="*60)
+        
+        test_cases = [
+            {
+                "name": "设备在线",
+                "data": {"device_id": "mirror_001", "status": "online", "battery": 85},
+                "expect_status": 200
+            },
+            {
+                "name": "设备运行中",
+                "data": {"device_id": "mirror_001", "status": "running", "cpu_usage": 32},
+                "expect_status": 200
+            },
+            {
+                "name": "缺少必填字段（应返回400）",
+                "data": {"battery": 50},
+                "expect_status": 400
+            }
+        ]
+        
+        for case in test_cases:
+            try:
+                response = self.session.post(
+                    f'{self.base_url}/api/device/status',
+                    json=case['data'],
+                    timeout=10
+                )
+                success = response.status_code == case['expect_status']
+                result = {
+                    'test_name': f"设备状态 - {case['name']}",
+                    'status_code': response.status_code,
+                    'success': success,
+                    'response_time_ms': round(response.elapsed.total_seconds() * 1000, 2),
+                    'response': response.json()
+                }
+            except Exception as e:
+                result = {
+                    'test_name': f"设备状态 - {case['name']}",
+                    'status_code': 0,
+                    'success': False,
+                    'error': str(e)
+                }
+            self._print_result(result)
+            self.test_results.append(result)
+
     def run_all_tests(self):
         """运行所有测试"""
         print("\n" + "="*60)
@@ -237,11 +384,14 @@ class APITester:
             print("请确保服务器正在运行！")
             return
         
-        # 执行所有测试
+        # 执行所有测试（含新增传感器接口）
         self.test_health_check()
         self.test_receive_data()
         self.test_get_stats()
         self.test_get_logs()
+        self.test_skin_sensor_api()
+        self.test_environment_sensor_api()
+        self.test_device_status_api()
         
         # 生成报告
         self.generate_report()

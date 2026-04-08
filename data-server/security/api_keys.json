@@ -1,0 +1,18 @@
+{
+  "key_admin_001": {
+    "user": "admin",
+    "role": "admin"
+  },
+  "key_user1_001": {
+    "user": "user1",
+    "role": "user"
+  },
+  "key_user2_001": {
+    "user": "user2",
+    "role": "user"
+  },
+  "key_user3_001": {
+    "user": "user3",
+    "role": "user"
+  }
+}

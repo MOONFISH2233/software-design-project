@@ -25,7 +25,7 @@ from mq_utils import create_mq
 class Config:
     """配置类"""
     # MQ 配置
-    MQ_TYPE = 'redis'  # 'redis' 或 'rabbitmq'
+    MQ_TYPE = 'redis'  
     MQ_HOST = '47.103.108.47'
     MQ_PORT = 6379
     MQ_DB = 0
