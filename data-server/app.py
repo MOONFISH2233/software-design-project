@@ -4,7 +4,7 @@ Flask 数据服务器 - 支持加密和鉴权
 版本：v3.0 - 安全增强版
 """
 
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_from_directory
 from flask_httpauth import HTTPTokenAuth
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
@@ -541,6 +541,20 @@ class RequestStats:
 
 # 全局请求统计
 request_stats = RequestStats()
+
+
+# ==================== 测试页面路由 ====================
+
+@app.route('/test', methods=['GET'])
+def test_dashboard():
+    """提供前端测试页面"""
+    return send_from_directory('static', 'test_dashboard.html')
+
+
+@app.route('/', methods=['GET'])
+def index():
+    """首页重定向到测试页面"""
+    return send_from_directory('static', 'test_dashboard.html')
 
 
 # ==================== 健康检查接口 ====================
