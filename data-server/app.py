@@ -42,9 +42,9 @@ limiter = Limiter(
 )
 
 # 创建日志目录和文件存储目录
-LOG_DIR = 'logs'
-DATA_DIR = 'data'
-SECURITY_DIR = 'security'
+LOG_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'logs')
+DATA_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data')
+SECURITY_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'security')
 os.makedirs(LOG_DIR, exist_ok=True)
 os.makedirs(DATA_DIR, exist_ok=True)
 os.makedirs(SECURITY_DIR, exist_ok=True)
