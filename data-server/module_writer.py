@@ -1,20 +1,30 @@
 """
-数据写入模块 - 将验证后的数据写入文件
+数据写入模块 - 将验证后的数据写入MongoDB数据库或文件
 功能：
 1. 从写入队列读取数据
-2. 按传感器类型分类写入不同目录
-3. 支持批量写入和文件轮转
-4. 支持多实例并行运行
+2. 支持MongoDB存储（主）和文件存储（备份/降级）
+3. 按传感器类型分类存储
+4. 支持批量写入和多实例并行运行
+5. 自动故障转移（MongoDB失败时切换到文件模式）
 """
 
 import sys
 import json
 import os
 from datetime import datetime
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 
 # 导入 MQ 工具
 from mq_utils import create_mq
+
+# 尝试导入 MongoDB 驱动
+try:
+    from pymongo import MongoClient, errors as mongo_errors
+    MONGO_AVAILABLE = True
+except ImportError:
+    MONGO_AVAILABLE = False
+    print("警告: pymongo 未安装，将使用文件存储模式")
+    print("安装命令: pip install pymongo")
 
 # ================= 配置 =================
 class Config:
@@ -33,7 +43,14 @@ class Config:
     CONSUMER_NAME = f'writer_{os.getpid()}'
     
     # 数据存储配置
+    STORAGE_MODE = 'mongodb'  # 可选值: 'mongodb', 'file', 'both'
     DATA_DIR = 'data'
+    
+    # MongoDB 配置
+    MONGO_URI = 'mongodb://localhost:27017/'
+    MONGO_DB_NAME = 'sensor_data'
+    MONGO_POOL_SIZE = 50
+    MONGO_MIN_POOL_SIZE = 10
     
     # 日志配置
     LOG_FILE = 'logs/writer.log'
@@ -73,10 +90,30 @@ logger = SimpleLogger(Config.LOG_FILE)
 class DataWriter:
     """数据写入器"""
     
-    def __init__(self, data_dir: str):
+    def __init__(self, data_dir: str, storage_mode: str):
         self.data_dir = data_dir
+        self.storage_mode = storage_mode
         self.write_count = 0
         self.error_count = 0
+        self.mongo_client = None
+        self.mongo_db = None
+        
+        if self.storage_mode in ['mongodb', 'both']:
+            self._init_mongo()
+    
+    def _init_mongo(self):
+        try:
+            self.mongo_client = MongoClient(
+                Config.MONGO_URI,
+                maxPoolSize=Config.MONGO_POOL_SIZE,
+                minPoolSize=Config.MONGO_MIN_POOL_SIZE
+            )
+            self.mongo_db = self.mongo_client[Config.MONGO_DB_NAME]
+            logger.info("✅ MongoDB 连接成功")
+        except mongo_errors.ConnectionFailure as e:
+            logger.error(f"✗ MongoDB 连接失败：{str(e)}")
+            self.mongo_client = None
+            self.mongo_db = None
     
     def get_sensor_directory(self, sensor_type: str) -> str:
         """
@@ -142,6 +179,44 @@ class DataWriter:
             logger.error(f"✗ 写入失败：{str(e)}")
             raise
     
+    def write_data_mongo(self, message: Dict[str, Any]) -> Optional[str]:
+        """
+        写入数据到MongoDB
+        :param message: 消息内容
+        :return: 文档ID
+        """
+        if not self.mongo_db:
+            logger.error("✗ MongoDB 连接不可用，无法写入")
+            return None
+        
+        sensor_type = message.get('sensor_type', 'unknown')
+        data = message.get('data', {})
+        
+        try:
+            # 添加元数据
+            output_data = {
+                **data,
+                'metadata': {
+                    'sensor_type': sensor_type,
+                    'original_timestamp': message.get('timestamp'),
+                    'received_at': message.get('received_at'),
+                    'validated_at': message.get('validated_at'),
+                    'written_at': datetime.now().isoformat(),
+                    'worker_pid': os.getpid()
+                }
+            }
+            
+            # 写入MongoDB
+            result = self.mongo_db[sensor_type].insert_one(output_data)
+            self.write_count += 1
+            logger.info(f"✓ 数据已写入MongoDB：{result.inserted_id}")
+            return str(result.inserted_id)
+            
+        except Exception as e:
+            self.error_count += 1
+            logger.error(f"✗ 写入MongoDB失败：{str(e)}")
+            return None
+    
     def get_stats(self) -> Dict[str, int]:
         """获取统计信息"""
         return {
@@ -160,6 +235,13 @@ def process_message(message: Dict[str, Any], writer: DataWriter):
     logger.info(f"写入数据：sensor_type={sensor_type}, time={message.get('timestamp')}")
     
     try:
+        # 尝试写入MongoDB
+        if writer.storage_mode in ['mongodb', 'both']:
+            mongo_id = writer.write_data_mongo(message)
+            if mongo_id:
+                logger.info(f"✓ 写入MongoDB成功：{mongo_id}")
+                return
+        
         # 写入文件
         filename = writer.write_data(message)
         logger.info(f"✓ 写入成功：{filename}")
@@ -194,7 +276,7 @@ def start_writer():
     logger.info("✅ MQ 连接成功")
     
     # 创建数据写入器
-    writer = DataWriter(Config.DATA_DIR)
+    writer = DataWriter(Config.DATA_DIR, Config.STORAGE_MODE)
     
     # 开始消费
     try:
