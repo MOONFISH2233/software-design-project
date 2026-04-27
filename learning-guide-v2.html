@@ -1,0 +1,893 @@
+                        • ✅ <strong>易于迁移</strong>：未来可平滑切换到其他数据库<br><br>
+                        
+                        <strong>代码实现：</strong><br>
+                        <div class="code-block"><span class="comment"># module_writer.py - 双写模式实现</span>
+<span class="keyword">class</span> <span class="function">DataWriter</span>:
+    <span class="keyword">def</span> <span class="function">__init__</span>(self, mode=<span class="string">'both'</span>):
+        self.mode = mode  <span class="comment"># 'mongodb', 'file', 'both'</span>
+        self.mongo_client = MongoDBClient() <span class="keyword">if</span> mode != <span class="string">'file'</span> <span class="keyword">else None</span>
+    
+    <span class="keyword">def</span> <span class="function">write</span>(self, data):
+        <span class="string">"""写入数据（双写模式）"""</span>
+        success_mongo = <span class="keyword">False</span>
+        success_file = <span class="keyword">False</span>
+        
+        <span class="comment"># 1. 尝试写入MongoDB</span>
+        <span class="keyword">if</span> self.mode <span class="keyword">in</span> [<span class="string">'mongodb'</span>, <span class="string">'both'</span>]:
+            <span class="keyword">try</span>:
+                collection_name = f<span class="string">"{data['sensor_type']}_data"</span>
+                self.mongo_client.insert_one(collection_name, data)
+                success_mongo = <span class="keyword">True</span>
+                logger.info(<span class="string">"✅ MongoDB写入成功"</span>)
+            <span class="keyword">except</span> Exception <span class="keyword">as</span> e:
+                logger.error(f<span class="string">"❌ MongoDB写入失败: {str(e)}"</span>)
+        
+        <span class="comment"># 2. 尝试写入文件（降级方案）</span>
+        <span class="keyword">if</span> self.mode <span class="keyword">in</span> [<span class="string">'file'</span>, <span class="string">'both'</span>]:
+            <span class="keyword">try</span>:
+                filename = f<span class="string">"data/{data['sensor_type']}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"</span>
+                <span class="keyword">with</span> open(filename, <span class="string">'w'</span>, encoding=<span class="string">'utf-8'</span>) <span class="keyword">as</span> f:
+                    json.dump(data, f, ensure_ascii=<span class="keyword">False</span>)
+                success_file = <span class="keyword">True</span>
+                logger.info(<span class="string">"✅ 文件写入成功"</span>)
+            <span class="keyword">except</span> Exception <span class="keyword">as</span> e:
+                logger.error(f<span class="string">"❌ 文件写入失败: {str(e)}"</span>)
+        
+        <span class="comment"># 3. 判断整体成功</span>
+        <span class="keyword">if</span> success_mongo <span class="keyword">or</span> success_file:
+            <span class="keyword">return True</span>
+        <span class="keyword">else</span>:
+            logger.error(<span class="string">"⚠️ 所有存储方式均失败！"</span>)
+            <span class="keyword">return False</span></div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- ==================== 第7周 ==================== -->
+            <div id="week7" class="tab-content">
+                <h2 style="color: #667eea; margin-bottom: 25px;">📅 第7周：MySQL + 定时任务 + 小程序规划</h2>
+                
+                <div class="week-card">
+                    <h3>🎯 任务目标分解</h3>
+                    <ul class="task-list">
+                        <li>思考小程序应具备的功能，以思维导图方式记录</li>
+                        <li>完善PowerDesigner数据库设计，转换为MySQL表结构</li>
+                        <li>实现Python定时任务（APScheduler），每日一次计算统计数据</li>
+                        <li>开发Flask接口，完成MySQL表的增删改查操作</li>
+                    </ul>
+                </div>
+                
+                <div class="week-card">
+                    <h3>📚 核心知识点深度解析</h3>
+                    
+                    <h4>1. MySQL 8个核心表设计</h4>
+                    <div class="info-box">
+                        <strong>为什么需要这8个表？</strong><br><br>
+                        
+                        <strong>数据库设计原则：</strong><br>
+                        • 📊 <strong>原始数据 vs 统计数据分离</strong>：MongoDB存原始，MySQL存统计<br>
+                        • 👤 <strong>用户与业务分离</strong>：账号管理和传感器数据分开<br>
+                        • 📋 <strong>主从表关系</strong>：设备信息为主表，传感器数据为从表<br>
+                        • 🔗 <strong>外键约束</strong>：保证数据完整性（如删除设备时级联删除其数据）<br><br>
+                        
+                        <strong>8个核心表详解：</strong><br>
+                        
+                        <table>
+                            <tr>
+                                <th>表名</th>
+                                <th>用途</th>
+                                <th>关键字段</th>
+                                <th>说明</th>
+                            </tr>
+                            <tr>
+                                <td><strong>users</strong></td>
+                                <td>用户账号管理</td>
+                                <td>id, username, password_hash, role, created_at</td>
+                                <td>存储管理员和普通用户账号</td>
+                            </tr>
+                            <tr>
+                                <td><strong>devices</strong></td>
+                                <td>设备注册信息</td>
+                                <td>id, device_id, device_name, location, status</td>
+                                <td>每个传感器的元数据</td>
+                            </tr>
+                            <tr>
+                                <td><strong>skin_daily_stats</strong></td>
+                                <td>皮肤数据日统计</td>
+                                <td>id, device_id, stat_date, avg_moisture, max_oiliness</td>
+                                <td>每日平均值、最大值等</td>
+                            </tr>
+                            <tr>
+                                <td><strong>env_daily_stats</strong></td>
+                                <td>环境数据日统计</td>
+                                <td>id, device_id, stat_date, avg_temp, min_humidity</td>
+                                <td>环境指标统计</td>
+                            </tr>
+                            <tr>
+                                <td><strong>api_logs</strong></td>
+                                <td>API调用日志</td>
+                                <td>id, user_id, endpoint, method, response_time, status_code</td>
+                                <td>审计和性能分析</td>
+                            </tr>
+                            <tr>
+                                <td><strong>system_config</strong></td>
+                                <td>系统配置</td>
+                                <td>id, config_key, config_value, description</td>
+                                <td>动态配置项（无需重启）</td>
+                            </tr>
+                            <tr>
+                                <td><strong>alert_rules</strong></td>
+                                <td>告警规则</td>
+                                <td>id, rule_name, condition, threshold, enabled</td>
+                                <td>如"温度>40度时告警"</td>
+                            </tr>
+                            <tr>
+                                <td><strong>alert_history</strong></td>
+                                <td>告警历史</td>
+                                <td>id, rule_id, triggered_at, value, resolved_at</td>
+                                <td>记录每次告警事件</td>
+                            </tr>
+                        </table>
+                    </div>
+                    
+                    <div class="code-block"><span class="comment"># models.py - Flask-SQLAlchemy模型定义</span>
+<span class="keyword">from</span> flask_sqlalchemy <span class="keyword">import</span> SQLAlchemy
+<span class="keyword">from</span> datetime <span class="keyword">import</span> datetime
+
+db = SQLAlchemy()
+
+<span class="keyword">class</span> <span class="function">User</span>(db.Model):
+    <span class="string">"""用户表"""</span>
+    __tablename__ = <span class="string">'users'</span>
+    
+    id = db.Column(db.Integer, primary_key=<span class="keyword">True</span>, autoincrement=<span class="keyword">True</span>)
+    username = db.Column(db.String(<span class="string">50</span>), unique=<span class="keyword">True</span>, nullable=<span class="keyword">False</span>)
+    password_hash = db.Column(db.String(<span class="string">255</span>), nullable=<span class="keyword">False</span>)
+    role = db.Column(db.String(<span class="string">20</span>), default=<span class="string">'user'</span>)  <span class="comment"># admin/user</span>
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    <span class="keyword">def</span> <span class="function">to_dict</span>(self):
+        <span class="keyword">return</span> {
+            <span class="string">'id'</span>: self.id,
+            <span class="string">'username'</span>: self.username,
+            <span class="string">'role'</span>: self.role,
+            <span class="string">'created_at'</span>: self.created_at.strftime(<span class="string">'%Y-%m-%d %H:%M:%S'</span>)
+        }
+
+<span class="keyword">class</span> <span class="function">Device</span>(db.Model):
+    <span class="string">"""设备表"""</span>
+    __tablename__ = <span class="string">'devices'</span>
+    
+    id = db.Column(db.Integer, primary_key=<span class="keyword">True</span>, autoincrement=<span class="keyword">True</span>)
+    device_id = db.Column(db.String(<span class="string">50</span>), unique=<span class="keyword">True</span>, nullable=<span class="keyword">False</span>)
+    device_name = db.Column(db.String(<span class="string">100</span>))
+    location = db.Column(db.String(<span class="string">200</span>))
+    status = db.Column(db.String(<span class="string">20</span>), default=<span class="string">'active'</span>)  <span class="comment"># active/inactive</span>
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    <span class="comment"># 关联查询：获取该设备的所有统计数据</span>
+    skin_stats = db.relationship(<span class="string">'SkinDailyStats'</span>, backref=<span class="string">'device'</span>, lazy=<span class="string">'dynamic'</span>)
+    
+    <span class="keyword">def</span> <span class="function">to_dict</span>(self):
+        <span class="keyword">return</span> {
+            <span class="string">'id'</span>: self.id,
+            <span class="string">'device_id'</span>: self.device_id,
+            <span class="string">'device_name'</span>: self.device_name,
+            <span class="string">'location'</span>: self.location,
+            <span class="string">'status'</span>: self.status
+        }
+
+<span class="keyword">class</span> <span class="function">SkinDailyStats</span>(db.Model):
+    <span class="string">"""皮肤数据日统计表"""</span>
+    __tablename__ = <span class="string">'skin_daily_stats'</span>
+    
+    id = db.Column(db.Integer, primary_key=<span class="keyword">True</span>, autoincrement=<span class="keyword">True</span>)
+    device_id = db.Column(db.String(<span class="string">50</span>), db.ForeignKey(<span class="string">'devices.device_id'</span>), nullable=<span class="keyword">False</span>)
+    stat_date = db.Column(db.Date, nullable=<span class="keyword">False</span>)
+    avg_moisture = db.Column(db.Float)
+    avg_oiliness = db.Column(db.Float)
+    max_temperature = db.Column(db.Float)
+    min_temperature = db.Column(db.Float)
+    record_count = db.Column(db.Integer, default=<span class="string">0</span>)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    <span class="comment"># 联合唯一索引：同一天同一设备只有一条统计</span>
+    __table_args__ = (
+        db.UniqueConstraint(<span class="string">'device_id'</span>, <span class="string">'stat_date'</span>, name=<span class="string">'unique_device_date'</span>),
+    )
+    
+    <span class="keyword">def</span> <span class="function">to_dict</span>(self):
+        <span class="keyword">return</span> {
+            <span class="string">'id'</span>: self.id,
+            <span class="string">'device_id'</span>: self.device_id,
+            <span class="string">'stat_date'</span>: self.stat_date.strftime(<span class="string">'%Y-%m-%d'</span>),
+            <span class="string">'avg_moisture'</span>: round(self.avg_moisture, <span class="string">2</span>) <span class="keyword">if</span> self.avg_moisture <span class="keyword">else None</span>,
+            <span class="string">'avg_oiliness'</span>: round(self.avg_oiliness, <span class="string">2</span>) <span class="keyword">if</span> self.avg_oiliness <span class="keyword">else None</span>,
+            <span class="string">'record_count'</span>: self.record_count
+        }</div>
+                    
+                    <h4>2. APScheduler定时任务详解</h4>
+                    <div class="warning-box">
+                        <strong>什么是APScheduler？为什么要用它？</strong><br><br>
+                        
+                        <strong>定时任务的三大应用场景：</strong><br>
+                        • 📊 <strong>数据统计</strong>：每天凌晨计算前一天的平均值、最大值<br>
+                        • 🧹 <strong>数据清理</strong>：定期删除过期数据（如保留最近90天）<br>
+                        • 📧 <strong>定时通知</strong>：每天早上8点发送日报邮件<br><br>
+                        
+                        <strong>APScheduler vs Cron的区别：</strong><br>
+                        • ✅ <strong>Python原生</strong>：直接集成在Flask应用中，无需额外进程<br>
+                        • ✅ <strong>灵活调度</strong>：支持interval/cron/date三种触发器<br>
+                        • ✅ <strong>持久化</strong>：可将任务存储到数据库，重启后不丢失<br>
+                        • ✅ <strong>动态管理</strong>：运行时添加/删除/修改任务<br><br>
+                        
+                        <strong>您的项目中的定时任务：</strong><br>
+                        • <strong>任务1</strong>：每天凌晨2点，从MongoDB读取昨日原始数据，计算统计值，写入MySQL<br>
+                        • <strong>任务2</strong>：每小时检查一次设备在线状态，更新devices表的status字段<br>
+                        • <strong>任务3</strong>：每周日凌晨3点，清理90天前的JSON备份文件
+                    </div>
+                    
+                    <div class="code-block"><span class="comment"># scheduler.py - APScheduler定时任务配置</span>
+<span class="keyword">from</span> apscheduler.schedulers.background <span class="keyword">import</span> BackgroundScheduler
+<span class="keyword">from</span> apscheduler.triggers.cron <span class="keyword">import</span> CronTrigger
+<span class="keyword">from</span> datetime <span class="keyword">import</span> datetime, timedelta
+<span class="keyword">import</span> logging
+
+logger = logging.getLogger(__name__)
+
+<span class="keyword">def</span> <span class="function">init_scheduler</span>(app, mongo_client, db):
+    <span class="string">"""初始化定时任务调度器"""</span>
+    scheduler = BackgroundScheduler()
+    
+    <span class="comment"># 任务1：每日凌晨2点计算统计数据</span>
+    scheduler.add_job(
+        func=calculate_daily_stats,
+        trigger=CronTrigger(hour=<span class="string">2</span>, minute=<span class="string">0</span>),  <span class="comment"># 每天2:00执行</span>
+        id=<span class="string">'daily_stats_calculation'</span>,
+        name=<span class="string">'计算每日统计数据'</span>,
+        args=[mongo_client, db],
+        replace_existing=<span class="keyword">True</span>
+    )
+    
+    <span class="comment"># 任务2：每小时检查设备状态</span>
+    scheduler.add_job(
+        func=check_device_status,
+        trigger=CronTrigger(minute=<span class="string">0</span>),  <span class="comment"># 每小时整点执行</span>
+        id=<span class="string">'device_status_check'</span>,
+        name=<span class="string">'检查设备在线状态'</span>,
+        args=[mongo_client, db],
+        replace_existing=<span class="keyword">True</span>
+    )
+    
+    <span class="comment"># 启动调度器</span>
+    scheduler.start()
+    logger.info(<span class="string">"✅ APScheduler定时任务已启动"</span>)
+    
+    <span class="keyword">return</span> scheduler
+
+<span class="keyword">def</span> <span class="function">calculate_daily_stats</span>(mongo_client, db):
+    <span class="string">"""计算前一天的统计数据并写入MySQL"""</span>
+    <span class="keyword">try</span>:
+        yesterday = (datetime.utcnow() - timedelta(days=<span class="string">1</span>)).date()
+        logger.info(f<span class="string">"开始计算 {yesterday} 的统计数据..."</span>)
+        
+        <span class="comment"># 1. 从MongoDB读取昨日所有皮肤数据</span>
+        start_time = datetime.combine(yesterday, datetime.min.time())
+        end_time = datetime.combine(yesterday, datetime.max.time())
+        
+        skin_data = mongo_client.find_by_time_range(
+            <span class="string">'skin_data'</span>, 
+            start_time, 
+            end_time
+        )
+        
+        <span class="comment"># 2. 按设备分组统计</span>
+        stats_by_device = {}
+        <span class="keyword">for</span> doc <span class="keyword">in</span> skin_data:
+            device_id = doc[<span class="string">'device_id'</span>]
+            <span class="keyword">if</span> device_id <span class="keyword">not in</span> stats_by_device:
+                stats_by_device[device_id] = {
+                    <span class="string">'moisture_sum'</span>: <span class="string">0</span>,
+                    <span class="string">'oiliness_sum'</span>: <span class="string">0</span>,
+                    <span class="string">'temp_max'</span>: <span class="string">-999</span>,
+                    <span class="string">'temp_min'</span>: <span class="string">999</span>,
+                    <span class="string">'count'</span>: <span class="string">0</span>
+                }
+            
+            data = doc[<span class="string">'data'</span>]
+            stats = stats_by_device[device_id]
+            stats[<span class="string">'moisture_sum'</span>] += data.get(<span class="string">'moisture'</span>, <span class="string">0</span>)
+            stats[<span class="string">'oiliness_sum'</span>] += data.get(<span class="string">'oiliness'</span>, <span class="string">0</span>)
+            stats[<span class="string">'temp_max'</span>] = max(stats[<span class="string">'temp_max'</span>], data.get(<span class="string">'temperature'</span>, <span class="string">0</span>))
+            stats[<span class="string">'temp_min'</span>] = min(stats[<span class="string">'temp_min'</span>], data.get(<span class="string">'temperature'</span>, <span class="string">999</span>))
+            stats[<span class="string">'count'</span>] += <span class="string">1</span>
+        
+        <span class="comment"># 3. 写入MySQL</span>
+        <span class="keyword">for</span> device_id, stats <span class="keyword">in</span> stats_by_device.items():
+            <span class="keyword">if</span> stats[<span class="string">'count'</span>] == <span class="string">0</span>:
+                <span class="keyword">continue</span>
+            
+            avg_moisture = stats[<span class="string">'moisture_sum'</span>] / stats[<span class="string">'count'</span>]
+            avg_oiliness = stats[<span class="string">'oiliness_sum'</span>] / stats[<span class="string">'count'</span>]
+            
+            <span class="comment"># 使用upsert：如果存在则更新，不存在则插入</span>
+            existing = db.session.query(SkinDailyStats).filter_by(
+                device_id=device_id,
+                stat_date=yesterday
+            ).first()
+            
+            <span class="keyword">if</span> existing:
+                existing.avg_moisture = avg_moisture
+                existing.avg_oiliness = avg_oiliness
+                existing.max_temperature = stats[<span class="string">'temp_max'</span>]
+                existing.min_temperature = stats[<span class="string">'temp_min'</span>]
+                existing.record_count = stats[<span class="string">'count'</span>]
+            <span class="keyword">else</span>:
+                new_stat = SkinDailyStats(
+                    device_id=device_id,
+                    stat_date=yesterday,
+                    avg_moisture=avg_moisture,
+                    avg_oiliness=avg_oiliness,
+                    max_temperature=stats[<span class="string">'temp_max'</span>],
+                    min_temperature=stats[<span class="string">'temp_min'</span>],
+                    record_count=stats[<span class="string">'count'</span>]
+                )
+                db.session.add(new_stat)
+        
+        db.session.commit()
+        logger.info(f<span class="string">"✅ 完成 {len(stats_by_device)} 个设备的统计"</span>)
+        
+    <span class="keyword">except</span> Exception <span class="keyword">as</span> e:
+        logger.error(f<span class="string">"❌ 统计任务失败: {str(e)}"</span>, exc_info=<span class="keyword">True</span>)
+        db.session.rollback()</div>
+                    
+                    <h4>3. Flask-SQLAlchemy CRUD接口</h4>
+                    <div class="success-box">
+                        <strong>CRUD是什么？</strong><br>
+                        • <strong>C</strong>reate（创建）：POST /api/devices<br>
+                        • <strong>R</strong>ead（读取）：GET /api/devices<br>
+                        • <strong>U</strong>pdate（更新）：PUT /api/devices/{id}<br>
+                        • <strong>D</strong>elete（删除）：DELETE /api/devices/{id}<br><br>
+                        
+                        <strong>RESTful API设计规范：</strong><br>
+                        • 使用HTTP方法表示操作类型（GET/POST/PUT/DELETE）<br>
+                        • 使用名词复数作为资源路径（/api/devices而非/api/createDevice）<br>
+                        • 返回统一的JSON格式（{status, message, data}）<br>
+                        • 使用合适的HTTP状态码（200成功/404未找到/500服务器错误）
+                    </div>
+                    
+                    <div class="code-block"><span class="comment"># routes_devices.py - 设备管理接口</span>
+<span class="keyword">from</span> flask <span class="keyword">import</span> Blueprint, request, jsonify
+<span class="keyword">from</span> models <span class="keyword">import</span> db, Device
+
+device_bp = Blueprint(<span class="string">'devices'</span>, __name__, url_prefix=<span class="string">'/api/devices'</span>)
+
+<span class="keyword">@device_bp.route</span>(<span class="string">''</span>, methods=[<span class="string">'GET'</span>])
+<span class="keyword">def</span> <span class="function">list_devices</span>():
+    <span class="string">"""获取所有设备列表"""</span>
+    <span class="keyword">try</span>:
+        page = request.args.get(<span class="string">'page'</span>, <span class="string">1</span>, type=<span class="keyword">int</span>)
+        per_page = request.args.get(<span class="string">'per_page'</span>, <span class="string">20</span>, type=<span class="keyword">int</span>)
+        
+        pagination = Device.query.paginate(page=page, per_page=per_page, error_out=<span class="keyword">False</span>)
+        devices = [device.to_dict() <span class="keyword">for</span> device <span class="keyword">in</span> pagination.items]
+        
+        <span class="keyword">return</span> jsonify({
+            <span class="string">'status'</span>: <span class="string">'success'</span>,
+            <span class="string">'data'</span>: devices,
+            <span class="string">'total'</span>: pagination.total,
+            <span class="string">'pages'</span>: pagination.pages
+        }), <span class="string">200</span>
+    <span class="keyword">except</span> Exception <span class="keyword">as</span> e:
+        <span class="keyword">return</span> jsonify({<span class="string">'status'</span>: <span class="string">'error'</span>, <span class="string">'message'</span>: str(e)}), <span class="string">500</span>
+
+<span class="keyword">@device_bp.route</span>(<span class="string">'/&lt;int:device_id&gt;'</span>, methods=[<span class="string">'GET'</span>])
+<span class="keyword">def</span> <span class="function">get_device</span>(device_id):
+    <span class="string">"""获取单个设备详情"""</span>
+    device = Device.query.get(device_id)
+    <span class="keyword">if not</span> device:
+        <span class="keyword">return</span> jsonify({<span class="string">'status'</span>: <span class="string">'error'</span>, <span class="string">'message'</span>: <span class="string">'设备不存在'</span>}), <span class="string">404</span>
+    
+    <span class="keyword">return</span> jsonify({<span class="string">'status'</span>: <span class="string">'success'</span>, <span class="string">'data'</span>: device.to_dict()}), <span class="string">200</span>
+
+<span class="keyword">@device_bp.route</span>(<span class="string">''</span>, methods=[<span class="string">'POST'</span>])
+<span class="keyword">def</span> <span class="function">create_device</span>():
+    <span class="string">"""创建设备"""</span>
+    <span class="keyword">try</span>:
+        data = request.get_json()
+        
+        <span class="comment"># 验证必填字段</span>
+        <span class="keyword">if not</span> data.get(<span class="string">'device_id'</span>):
+            <span class="keyword">return</span> jsonify({<span class="string">'status'</span>: <span class="string">'error'</span>, <span class="string">'message'</span>: <span class="string">'device_id不能为空'</span>}), <span class="string">400</span>
+        
+        <span class="comment"># 检查是否已存在</span>
+        <span class="keyword">if</span> Device.query.filter_by(device_id=data[<span class="string">'device_id'</span>]).first():
+            <span class="keyword">return</span> jsonify({<span class="string">'status'</span>: <span class="string">'error'</span>, <span class="string">'message'</span>: <span class="string">'设备ID已存在'</span>}), <span class="string">409</span>
+        
+        <span class="comment"># 创建新设备</span>
+        new_device = Device(
+            device_id=data[<span class="string">'device_id'</span>],
+            device_name=data.get(<span class="string">'device_name'</span>, <span class="string">''</span>),
+            location=data.get(<span class="string">'location'</span>, <span class="string">''</span>),
+            status=data.get(<span class="string">'status'</span>, <span class="string">'active'</span>)
+        )
+        
+        db.session.add(new_device)
+        db.session.commit()
+        
+        <span class="keyword">return</span> jsonify({
+            <span class="string">'status'</span>: <span class="string">'success'</span>,
+            <span class="string">'message'</span>: <span class="string">'设备创建成功'</span>,
+            <span class="string">'data'</span>: new_device.to_dict()
+        }), <span class="string">201</span>
+    <span class="keyword">except</span> Exception <span class="keyword">as</span> e:
+        db.session.rollback()
+        <span class="keyword">return</span> jsonify({<span class="string">'status'</span>: <span class="string">'error'</span>, <span class="string">'message'</span>: str(e)}), <span class="string">500</span>
+
+<span class="keyword">@device_bp.route</span>(<span class="string">'/&lt;int:device_id&gt;'</span>, methods=[<span class="string">'PUT'</span>])
+<span class="keyword">def</span> <span class="function">update_device</span>(device_id):
+    <span class="string">"""更新设备信息"""</span>
+    device = Device.query.get(device_id)
+    <span class="keyword">if not</span> device:
+        <span class="keyword">return</span> jsonify({<span class="string">'status'</span>: <span class="string">'error'</span>, <span class="string">'message'</span>: <span class="string">'设备不存在'</span>}), <span class="string">404</span>
+    
+    <span class="keyword">try</span>:
+        data = request.get_json()
+        
+        <span class="comment"># 更新字段</span>
+        <span class="keyword">if</span> <span class="string">'device_name'</span> <span class="keyword">in</span> data:
+            device.device_name = data[<span class="string">'device_name'</span>]
+        <span class="keyword">if</span> <span class="string">'location'</span> <span class="keyword">in</span> data:
+            device.location = data[<span class="string">'location'</span>]
+        <span class="keyword">if</span> <span class="string">'status'</span> <span class="keyword">in</span> data:
+            device.status = data[<span class="string">'status'</span>]
+        
+        db.session.commit()
+        
+        <span class="keyword">return</span> jsonify({
+            <span class="string">'status'</span>: <span class="string">'success'</span>,
+            <span class="string">'message'</span>: <span class="string">'设备更新成功'</span>,
+            <span class="string">'data'</span>: device.to_dict()
+        }), <span class="string">200</span>
+    <span class="keyword">except</span> Exception <span class="keyword">as</span> e:
+        db.session.rollback()
+        <span class="keyword">return</span> jsonify({<span class="string">'status'</span>: <span class="string">'error'</span>, <span class="string">'message'</span>: str(e)}), <span class="string">500</span>
+
+<span class="keyword">@device_bp.route</span>(<span class="string">'/&lt;int:device_id&gt;'</span>, methods=[<span class="string">'DELETE'</span>])
+<span class="keyword">def</span> <span class="function">delete_device</span>(device_id):
+    <span class="string">"""删除设备"""</span>
+    device = Device.query.get(device_id)
+    <span class="keyword">if not</span> device:
+        <span class="keyword">return</span> jsonify({<span class="string">'status'</span>: <span class="string">'error'</span>, <span class="string">'message'</span>: <span class="string">'设备不存在'</span>}), <span class="string">404</span>
+    
+    <span class="keyword">try</span>:
+        db.session.delete(device)
+        db.session.commit()
+        
+        <span class="keyword">return</span> jsonify({
+            <span class="string">'status'</span>: <span class="string">'success'</span>,
+            <span class="string">'message'</span>: <span class="string">'设备删除成功'</span>
+        }), <span class="string">200</span>
+    <span class="keyword">except</span> Exception <span class="keyword">as</span> e:
+        db.session.rollback()
+        <span class="keyword">return</span> jsonify({<span class="string">'status'</span>: <span class="string">'error'</span>, <span class="string">'message'</span>: str(e)}), <span class="string">500</span></div>
+                </div>
+            </div>
+            
+            <!-- ==================== 系统架构 ==================== -->
+            <div id="architecture" class="tab-content">
+                <h2 style="color: #667eea; margin-bottom: 25px;">🏗️ 完整系统架构图</h2>
+                
+                <div class="week-card">
+                    <h3>技术栈对比与选型理由</h3>
+                    <table>
+                        <tr>
+                            <th>技术组件</th>
+                            <th>选型</th>
+                            <th>替代方案</th>
+                            <th>选择理由</th>
+                        </tr>
+                        <tr>
+                            <td><strong>Web框架</strong></td>
+                            <td>Flask 2.0.3</td>
+                            <td>Django/FastAPI</td>
+                            <td>轻量灵活，适合微服务架构；Django太重，FastAPI太新生态不够成熟</td>
+                        </tr>
+                        <tr>
+                            <td><strong>WSGI服务器</strong></td>
+                            <td>Gunicorn + gevent</td>
+                            <td>uWSNGINX/flask内置</td>
+                            <td>gevent异步Worker能处理高并发I/O密集型请求，性能比同步Worker高10倍+</td>
+                        </tr>
+                        <tr>
+                            <td><strong>消息队列</strong></td>
+                            <td>Redis Streams</td>
+                            <td>RabbitMQ/Kafka</td>
+                            <td>轻量易部署，与Redis缓存共用；RabbitMQ/Kafka对小型项目过重</td>
+                        </tr>
+                        <tr>
+                            <td><strong>NoSQL数据库</strong></td>
+                            <td>MongoDB 6.0</td>
+                            <td>Cassandra/Elasticsearch</td>
+                            <td>文档模型完美匹配JSON传感器数据；Cassandra学习曲线陡峭</td>
+                        </tr>
+                        <tr>
+                            <td><strong>SQL数据库</strong></td>
+                            <td>MySQL 8.0</td>
+                            <td>PostgreSQL/MariaDB</td>
+                            <td>生态成熟，宝塔面板一键安装；PostgreSQL功能更强但运维复杂</td>
+                        </tr>
+                        <tr>
+                            <td><strong>ORM框架</strong></td>
+                            <td>Flask-SQLAlchemy</td>
+                            <td>Peewee/Pony ORM</td>
+                            <td>官方推荐扩展，文档丰富，社区活跃</td>
+                        </tr>
+                        <tr>
+                            <td><strong>定时任务</strong></td>
+                            <td>APScheduler</td>
+                            <td>Celery Beat/Airflow</td>
+                            <td>轻量集成简单；Celery需要额外Broker，Airflow适合大数据ETL</td>
+                        </tr>
+                        <tr>
+                            <td><strong>认证方案</strong></td>
+                            <td>JWT (PyJWT)</td>
+                            <td>Session/OAuth2</td>
+                            <td>无状态适合分布式；OAuth2过于复杂不适合内部系统</td>
+                        </tr>
+                        <tr>
+                            <td><strong>加密算法</strong></td>
+                            <td>AES-256-CBC</td>
+                            <td>RSA/ChaCha20</td>
+                            <td>对称加密速度快适合大数据；RSA适合小数据密钥交换</td>
+                        </tr>
+                        <tr>
+                            <td><strong>压力测试</strong></td>
+                            <td>JMeter 5.6.3</td>
+                            <td>Locust/wrk</td>
+                            <td>图形界面友好，报告详细；Locust需编写Python脚本</td>
+                        </tr>
+                    </table>
+                </div>
+                
+                <div class="week-card">
+                    <h3>数据流转全景图</h3>
+                    <div class="architecture-flow">
+                        <div style="margin-bottom: 30px;">
+                            <h4 style="color: #667eea; margin-bottom: 15px;">📱 数据采集层</h4>
+                            <div class="flow-step">🖥️ 模拟器1<br/>simulator_mq.py</div>
+                            <div class="flow-step">🖥️ 模拟器2<br/>Docker容器</div>
+                            <div class="flow-step">🖥️ 模拟器3<br/>Docker容器</div>
+                        </div>
+                        
+                        <div class="flow-arrow" style="font-size: 3em;">⬇️ HTTP POST + JWT + AES</div>
+                        
+                        <div style="margin: 30px 0;">
+                            <h4 style="color: #667eea; margin-bottom: 15px;">🌐 网络传输层</h4>
+                            <div class="flow-step">🔒 HTTPS<br/>TLS 1.3</div>
+                            <div class="flow-step">⚖️ Nginx<br/>负载均衡</div>
+                        </div>
+                        
+                        <div class="flow-arrow" style="font-size: 3em;">⬇️</div>
+                        
+                        <div style="margin: 30px 0;">
+                            <h4 style="color: #667eea; margin-bottom: 15px;">🚀 应用服务层</h4>
+                            <div class="flow-step">🐍 Flask App<br/>Gunicorn (8 Workers)</div>
+                            <div class="flow-step">🔑 JWT验证<br/>中间件</div>
+                            <div class="flow-step">🔐 AES解密<br/>encryption.py</div>
+                        </div>
+                        
+                        <div class="flow-arrow" style="font-size: 3em;">⬇️ Redis XADD</div>
+                        
+                        <div style="margin: 30px 0;">
+                            <h4 style="color: #667eea; margin-bottom: 15px;">⚡ 消息队列层</h4>
+                            <div class="flow-step">📥 sensor:raw<br/>原始数据流</div>
+                            <div class="flow-step">✅ sensor:validated<br/>验证后数据</div>
+                            <div class="flow-step">💾 sensor:write<br/>待写入队列</div>
+                        </div>
+                        
+                        <div class="flow-arrow" style="font-size: 3em;">⬇️ 模块化消费</div>
+                        
+                        <div style="margin: 30px 0;">
+                            <h4 style="color: #667eea; margin-bottom: 15px;">🔧 数据处理层</h4>
+                            <div class="flow-step">📥 Receiver<br/>基础校验</div>
+                            <div class="flow-step">✅ Validator<br/>业务验证</div>
+                            <div class="flow-step">💾 Writer<br/>双写模式</div>
+                            <div class="flow-step">📝 Logger<br/>异步日志</div>
+                        </div>
+                        
+                        <div class="flow-arrow" style="font-size: 3em;">⬇️ 并行写入</div>
+                        
+                        <div style="margin: 30px 0;">
+                            <h4 style="color: #667eea; margin-bottom: 15px;">💾 数据存储层</h4>
+                            <div class="flow-step">🗄️ MongoDB<br/>sensor_data库<br/>原始数据</div>
+                            <div class="flow-step">🗃️ MySQL<br/>software_design库<br/>统计数据</div>
+                            <div class="flow-step">📁 JSON Files<br/>降级备份<br/>data/目录</div>
+                        </div>
+                        
+                        <div class="flow-arrow" style="font-size: 3em;">⬇️ 定时任务</div>
+                        
+                        <div style="margin-top: 30px;">
+                            <h4 style="color: #667eea; margin-bottom: 15px;">📊 统计分析层</h4>
+                            <div class="flow-step">⏰ APScheduler<br/>每日2:00</div>
+                            <div class="flow-step">📈 聚合计算<br/>平均值/最大值</div>
+                            <div class="flow-step">💾 写入MySQL<br/>skin_daily_stats表</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- ==================== API接口详解 ==================== -->
+            <div id="api" class="tab-content">
+                <h2 style="color: #667eea; margin-bottom: 25px;">🔌 完整API接口清单</h2>
+                
+                <div class="week-card">
+                    <h3>认证与安全接口</h3>
+                    <table>
+                        <tr>
+                            <th>接口</th>
+                            <th>方法</th>
+                            <th>参数</th>
+                            <th>响应</th>
+                            <th>说明</th>
+                        </tr>
+                        <tr>
+                            <td>/api/auth/login</td>
+                            <td>POST</td>
+                            <td>{username, password}</td>
+                            <td>{token, expires_in}</td>
+                            <td>用户登录获取JWT Token</td>
+                        </tr>
+                        <tr>
+                            <td>/api/auth/refresh</td>
+                            <td>POST</td>
+                            <td>{refresh_token}</td>
+                            <td>{new_token}</td>
+                            <td>刷新Token（延长有效期）</td>
+                        </tr>
+                        <tr>
+                            <td>/api/health</td>
+                            <td>GET</td>
+                            <td>无</td>
+                            <td>{status: "healthy"}</td>
+                            <td>健康检查（无需认证）</td>
+                        </tr>
+                    </table>
+                </div>
+                
+                <div class="week-card">
+                    <h3>数据接收接口</h3>
+                    <table>
+                        <tr>
+                            <th>接口</th>
+                            <th>方法</th>
+                            <th>认证</th>
+                            <th>加密</th>
+                            <th>频率</th>
+                        </tr>
+                        <tr>
+                            <td>/api/receive</td>
+                            <td>POST</td>
+                            <td>❌ 无</td>
+                            <td>❌ 明文</td>
+                            <td>10-100次/秒</td>
+                        </tr>
+                        <tr>
+                            <td>/api/receive/secure</td>
+                            <td>POST</td>
+                            <td>✅ JWT</td>
+                            <td>✅ AES-256</td>
+                            <td>10-100次/秒</td>
+                        </tr>
+                        <tr>
+                            <td>/api/receive/apikey</td>
+                            <td>POST</td>
+                            <td>✅ API Key</td>
+                            <td>❌ 明文</td>
+                            <td>10-100次/秒</td>
+                        </tr>
+                    </table>
+                </div>
+                
+                <div class="week-card">
+                    <h3>设备管理接口（需JWT认证）</h3>
+                    <table>
+                        <tr>
+                            <th>接口</th>
+                            <th>方法</th>
+                            <th>参数</th>
+                            <th>说明</th>
+                        </tr>
+                        <tr>
+                            <td>/api/devices</td>
+                            <td>GET</td>
+                            <td>?page=1&per_page=20</td>
+                            <td>分页获取设备列表</td>
+                        </tr>
+                        <tr>
+                            <td>/api/devices</td>
+                            <td>POST</td>
+                            <td>{device_id, device_name, location}</td>
+                            <td>注册新设备</td>
+                        </tr>
+                        <tr>
+                            <td>/api/devices/{id}</td>
+                            <td>GET</td>
+                            <td>路径参数</td>
+                            <td>获取设备详情</td>
+                        </tr>
+                        <tr>
+                            <td>/api/devices/{id}</td>
+                            <td>PUT</td>
+                            <td>{device_name, location, status}</td>
+                            <td>更新设备信息</td>
+                        </tr>
+                        <tr>
+                            <td>/api/devices/{id}</td>
+                            <td>DELETE</td>
+                            <td>路径参数</td>
+                            <td>删除设备</td>
+                        </tr>
+                    </table>
+                </div>
+                
+                <div class="week-card">
+                    <h3>统计数据查询接口</h3>
+                    <table>
+                        <tr>
+                            <th>接口</th>
+                            <th>方法</th>
+                            <th>参数</th>
+                            <th>说明</th>
+                        </tr>
+                        <tr>
+                            <td>/api/stats/skin/daily</td>
+                            <td>GET</td>
+                            <td>?device_id=xxx&start_date=2026-04-01&end_date=2026-04-27</td>
+                            <td>查询皮肤数据日统计</td>
+                        </tr>
+                        <tr>
+                            <td>/api/stats/env/daily</td>
+                            <td>GET</td>
+                            <td>?device_id=xxx&start_date=2026-04-01</td>
+                            <td>查询环境数据日统计</td>
+                        </tr>
+                        <tr>
+                            <td>/api/stats/trend</td>
+                            <td>GET</td>
+                            <td>?metric=moisture&days=7</td>
+                            <td>获取趋势数据（用于图表）</td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+            
+            <!-- ==================== 部署运维 ==================== -->
+            <div id="deployment" class="tab-content">
+                <h2 style="color: #667eea; margin-bottom: 25px;">🚀 部署与运维指南</h2>
+                
+                <div class="week-card">
+                    <h3>服务器环境配置</h3>
+                    <div class="server-info">
+                        <div><strong>SSH连接:</strong> ssh root@47.103.108.47 (密码: @Dierzu999)</div>
+                        <div><strong>项目根目录:</strong> /root/course-project/week5/data-server/data-server/</div>
+                        <div><strong>虚拟环境:</strong> /root/course-project/venv/bin/activate</div>
+                        <div><strong>Gunicorn配置:</strong> config/gunicorn_config.py (8 workers, gevent)</div>
+                        <div><strong>Nginx配置:</strong> /www/server/nginx/conf/vhost/data-server.conf</div>
+                        <div><strong>日志位置:</strong> logs/server.log, logs/error.log</div>
+                        <div><strong>数据目录:</strong> data/ (JSON备份文件)</div>
+                    </div>
+                </div>
+                
+                <div class="week-card">
+                    <h3>常用运维命令</h3>
+                    <div class="code-block"><span class="comment"># 1. 查看服务状态</span>
+ps aux | grep gunicorn
+systemctl status nginx
+systemctl status redis
+systemctl status mongod
+systemctl status mysqld
+
+<span class="comment"># 2. 重启服务</span>
+cd /root/course-project/week5/data-server/data-server
+pkill -f gunicorn
+nohup gunicorn -c config/gunicorn_config.py app:app --daemon &
+
+<span class="comment"># 3. 查看实时日志</span>
+tail -f logs/server.log
+tail -f logs/error.log
+
+<span class="comment"># 4. 数据库操作</span>
+mongo  <span class="comment"># 进入MongoDB Shell</span>
+mysql -u root -p software_design  <span class="comment"># 进入MySQL</span>
+
+<span class="comment"># 5. Redis操作</span>
+redis-cli
+> keys *
+> xlen sensor:raw  <span class="comment"># 查看Stream长度</span>
+
+<span class="comment"># 6. 压力测试</span>
+jmeter -n -t test_plan.jmx -l results.jtl -e -o report/
+
+<span class="comment"># 7. 备份数据</span>
+mongodump --db sensor_data --out /backup/mongodb/$(date +%Y%m%d)
+mysqldump -u root -p software_design > /backup/mysql/$(date +%Y%m%d).sql</div>
+                </div>
+                
+                <div class="week-card">
+                    <h3>故障排查手册</h3>
+                    <table>
+                        <tr>
+                            <th>问题现象</th>
+                            <th>可能原因</th>
+                            <th>解决方案</th>
+                        </tr>
+                        <tr>
+                            <td>API返回500错误</td>
+                            <td>代码异常、数据库连接失败</td>
+                            <td>查看logs/error.log，检查数据库服务状态</td>
+                        </tr>
+                        <tr>
+                            <td>响应时间过长</td>
+                            <td>CPU满载、数据库慢查询</td>
+                            <td>top查看CPU，EXPLAIN分析SQL，增加索引</td>
+                        </tr>
+                        <tr>
+                            <td>内存泄漏</td>
+                            <td>Python对象未释放</td>
+                            <td>重启Gunicorn，检查代码中的全局变量</td>
+                        </tr>
+                        <tr>
+                            <td>Redis连接失败</td>
+                            <td>Redis服务宕机、端口被占用</td>
+                            <td>systemctl restart redis，检查防火墙规则</td>
+                        </tr>
+                        <tr>
+                            <td>MongoDB写入缓慢</td>
+                            <td>缺少索引、磁盘I/O瓶颈</td>
+                            <td>创建合适索引，监控iostat，考虑SSD升级</td>
+                        </tr>
+                        <tr>
+                            <td>JWT验证失败</td>
+                            <td>Token过期、密钥不匹配</td>
+                            <td>检查客户端Token有效期，确认SECRET_KEY一致</td>
+                        </tr>
+                    </table>
+                </div>
+                
+                <div class="success-box">
+                    <strong>🎉 恭喜您完成了整个软件设计项目的学习！</strong><br><br>
+                    
+                    <strong>下一步建议：</strong><br>
+                    • 📱 <strong>开发微信小程序</strong>：展示实时数据和统计图表<br>
+                    • 🤖 <strong>接入真实传感器</strong>：替换模拟器为硬件设备<br>
+                    • 📊 <strong>数据可视化大屏</strong>：使用ECharts展示多维度数据<br>
+                    • 🔔 <strong>智能告警系统</strong>：基于规则的异常检测和通知<br>
+                    • ☁️ <strong>多云部署</strong>：阿里云+腾讯云双活架构<br>
+                    • 📈 <strong>机器学习预测</strong>：基于历史数据预测未来趋势
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        function showTab(tabId) {
+            // 隐藏所有内容
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            
+            // 移除所有按钮的active状态
+            document.querySelectorAll('.tab-button').forEach(button => {
+                button.classList.remove('active');
+            });
+            
+            // 显示选中的内容
+            document.getElementById(tabId).classList.add('active');
+            
+            // 激活对应的按钮
+            event.target.classList.add('active');
+        }
+    </script>
+</body>
+</html>

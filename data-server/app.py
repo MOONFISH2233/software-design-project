@@ -4,11 +4,11 @@ Flask 数据服务器 - 支持加密和鉴权
 版本：v3.0 - 安全增强版
 """
 
-from flask import Flask, request, jsonify, send_from_directory
-from flask_cors import CORS
+from flask import Flask, request, jsonify
 from flask_httpauth import HTTPTokenAuth
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
+from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime, timedelta
 from functools import wraps
 import jwt
@@ -29,9 +29,20 @@ import time
 from typing import Dict, Any, Optional
 
 app = Flask(__name__)
-CORS(app)  # 启用CORS支持，允许跨域请求
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', secrets.token_hex(32))
 app.config['JWT_EXPIRATION_HOURS'] = 24
+
+# ==================== MySQL数据库配置 ====================
+app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://root:admin@localhost/sensor_project?charset=utf8mb4'
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
+    'pool_size': 10,
+    'pool_recycle': 3600,
+    'pool_pre_ping': True
+}
+
+# 初始化数据库
+db = SQLAlchemy(app)
 
 # 初始化认证
 auth = HTTPTokenAuth(scheme='Bearer')
@@ -545,20 +556,6 @@ class RequestStats:
 request_stats = RequestStats()
 
 
-# ==================== 测试页面路由 ====================
-
-@app.route('/test', methods=['GET'])
-def test_dashboard():
-    """提供前端测试页面"""
-    return send_from_directory('static', 'test_dashboard.html')
-
-
-@app.route('/', methods=['GET'])
-def index():
-    """首页重定向到测试页面"""
-    return send_from_directory('static', 'test_dashboard.html')
-
-
 # ==================== 健康检查接口 ====================
 
 @app.route('/api/health', methods=['GET'])
@@ -862,13 +859,30 @@ def get_stats():
         
         return jsonify({
             'status': 'success',
-            'stats': stats,
-            'timestamp': datetime.now().isoformat()
+            'stats': stats
         })
         
     except Exception as e:
         logger.error(f"获取统计信息失败：{e}")
         return jsonify({'error': str(e)}), 500
+
+
+# ==================== MySQL路由注册 ====================
+try:
+    from routes.mysql_routes import mysql_bp
+    app.register_blueprint(mysql_bp)
+    print("✅ MySQL路由注册成功")
+except Exception as e:
+    print(f"⚠️  MySQL路由注册失败: {e}")
+
+
+# ==================== 小程序路由注册 ====================
+try:
+    from routes.miniprogram_routes import init_app as init_miniprogram
+    init_miniprogram(app)
+    print("✅ 小程序路由注册成功")
+except Exception as e:
+    print(f"⚠️  小程序路由注册失败: {e}")
 
 
 # ==================== 主程序入口 ====================
@@ -896,6 +910,13 @@ if __name__ == '__main__':
     print("  数据加密：/api/encrypt")
     print("  数据解密：/api/decrypt")
     print("  健康检查：/api/health")
+    print("=" * 60)
+    print("MySQL API 接口：")
+    print("  设备管理：/api/mysql/devices [GET/POST/PUT/DELETE]")
+    print("  皮肤数据：/api/mysql/skin-data [GET/POST]")
+    print("  环境数据：/api/mysql/environment-data [GET]")
+    print("  统计数据：/api/mysql/statistics [GET]")
+    print("  用户管理：/api/mysql/users [GET]")
     print("=" * 60)
     
     # 启动服务器

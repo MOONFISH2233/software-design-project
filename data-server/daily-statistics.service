@@ -1,0 +1,16 @@
+[Unit]
+Description=Daily Statistics Task Service
+After=network.target mongod.service mysqld.service
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/root/course-project/week5/data-server/data-server
+ExecStart=/usr/bin/python3 /root/course-project/week5/data-server/data-server/tasks/daily_statistics.py
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
