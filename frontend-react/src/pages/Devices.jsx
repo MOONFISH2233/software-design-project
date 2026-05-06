@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Smartphone, Wifi, Battery, Signal, Plus, Trash2, Edit } from 'lucide-react';
+import { Smartphone, Wifi, Battery, Signal, Plus, ArrowLeft } from 'lucide-react';
 import api from '../api';
+import { useNavigate } from 'react-router-dom';
 
 export default function Devices() {
   const [devices, setDevices] = useState([]);
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
 
   useEffect(() => {
     loadDevices();
@@ -22,25 +24,38 @@ export default function Devices() {
     }
   };
 
+  const handleBindDevice = () => {
+    // TODO: 打开绑定设备对话框
+    alert('绑定设备功能开发中...');
+  };
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 pt-28 pb-12 px-6">
-      <div className="max-w-7xl mx-auto">
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
+    <div className="pt-28 pb-12 px-6 max-w-7xl mx-auto">
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="mb-8 flex items-center space-x-4">
+        <button 
+          onClick={() => navigate(-1)}
+          className="p-2 bg-white rounded-lg shadow hover:shadow-lg transition-all"
+        >
+          <ArrowLeft className="w-5 h-5 text-gray-600" />
+        </button>
+        <div>
           <h1 className="text-4xl font-bold text-gray-800 mb-2">设备管理</h1>
           <p className="text-gray-600">管理您的皮肤监测设备</p>
-        </motion.div>
+        </div>
+      </motion.div>
 
-        <motion.button
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.2 }}
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-          className="mb-8 px-6 py-3 bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-xl hover:shadow-lg transition-all flex items-center space-x-2"
-        >
-          <Plus className="w-5 h-5" />
-          <span>绑定新设备</span>
-        </motion.button>
+      <motion.button
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.2 }}
+        whileHover={{ scale: 1.05 }}
+        whileTap={{ scale: 0.95 }}
+        onClick={handleBindDevice}
+        className="mb-8 px-6 py-3 bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-xl hover:shadow-lg transition-all flex items-center space-x-2"
+      >
+        <Plus className="w-5 h-5" />
+        <span>绑定新设备</span>
+      </motion.button>
 
         {loading ? (
           <div className="flex justify-center py-20">
@@ -81,7 +96,6 @@ export default function Devices() {
             ))}
           </div>
         )}
-      </div>
     </div>
   );
 }

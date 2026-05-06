@@ -9,6 +9,7 @@ import Reports from './pages/Reports';
 import Notifications from './pages/Notifications';
 import Community from './pages/Community';
 import Profile from './pages/Profile';
+import Layout from './components/Layout';
 import { useUserStore } from './stores/userStore';
 
 function ProtectedRoute({ children }) {
@@ -23,21 +24,23 @@ function App() {
         {/* 登录页面 */}
         <Route path="/login" element={<Login />} />
         
-        {/* 受保护的路由 - 官网风格 */}
+        {/* 受保护的路由 - 使用Layout包裹 */}
         <Route
           path="/*"
           element={
             <ProtectedRoute>
-              <Routes>
-                <Route index element={<Dashboard />} />
-                <Route path="devices" element={<Devices />} />
-                <Route path="skin-data" element={<SkinData />} />
-                <Route path="environment" element={<Environment />} />
-                <Route path="reports" element={<Reports />} />
-                <Route path="notifications" element={<Notifications />} />
-                <Route path="community" element={<Community />} />
-                <Route path="profile" element={<Profile />} />
-              </Routes>
+              <Layout>
+                <Routes>
+                  <Route index element={<Dashboard />} />
+                  <Route path="devices" element={<Devices />} />
+                  <Route path="skin-data" element={<SkinData />} />
+                  <Route path="environment" element={<Environment />} />
+                  <Route path="reports" element={<Reports />} />
+                  <Route path="notifications" element={<Notifications />} />
+                  <Route path="community" element={<Community />} />
+                  <Route path="profile" element={<Profile />} />
+                </Routes>
+              </Layout>
             </ProtectedRoute>
           }
         />
