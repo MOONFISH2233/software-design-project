@@ -1,0 +1,629 @@
+{
+	"info": {
+		"_postman_id": "miniprogram-api-collection",
+		"name": "皮肤健康监测系统 - 小程序API",
+		"description": "皮肤健康监测系统小程序端API接口集合\n\n基础URL: http://47.103.108.47:5000/api/miniprogram\n认证方式: JWT Token (Bearer)",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"auth": {
+		"type": "bearer",
+		"bearer": [
+			{
+				"key": "token",
+				"value": "{{token}}",
+				"type": "string"
+			}
+		]
+	},
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://47.103.108.47:5000/api/miniprogram",
+			"type": "string"
+		},
+		{
+			"key": "token",
+			"value": "",
+			"type": "string"
+		}
+	],
+	"item": [
+		{
+			"name": "1. 用户模块",
+			"item": [
+				{
+					"name": "1.1 用户注册",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"username\": \"test_user_{{timestamp}}\",\n    \"password\": \"123456\",\n    \"phone\": \"13800138000\",\n    \"nickname\": \"测试用户\",\n    \"avatar\": \"https://example.com/avatar.jpg\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/user/register",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"user",
+								"register"
+							]
+						},
+						"description": "创建新用户账号\n\n**请求参数**:\n- username: 用户名（唯一）\n- password: 密码（最少6位）\n- phone: 手机号\n- nickname: 昵称（可选）\n- avatar: 头像URL（可选）"
+					},
+					"response": []
+				},
+				{
+					"name": "1.2 用户登录",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    var jsonData = pm.response.json();",
+									"    if (jsonData.success && jsonData.data.token) {",
+									"        pm.environment.set(\"token\", jsonData.data.token);",
+									"        console.log('Token已保存:', jsonData.data.token);",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"username\": \"test_user\",\n    \"password\": \"123456\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/user/login",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"user",
+								"login"
+							]
+						},
+						"description": "用户登录获取JWT Token\n\n**重要**: 登录成功后会自动保存Token到环境变量，后续请求会自动携带。"
+					},
+					"response": []
+				},
+				{
+					"name": "1.3 获取个人信息",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/user/profile",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"user",
+								"profile"
+							]
+						},
+						"description": "获取当前登录用户的个人信息\n\n**需要认证**: 是"
+					},
+					"response": []
+				},
+				{
+					"name": "1.4 更新个人信息",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"nickname\": \"新昵称\",\n    \"avatar\": \"https://example.com/new_avatar.jpg\",\n    \"gender\": \"male\",\n    \"age\": 25,\n    \"skin_type\": \"combination\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/user/profile",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"user",
+								"profile"
+							]
+						},
+						"description": "更新用户个人信息\n\n**可更新字段**:\n- nickname: 昵称\n- avatar: 头像URL\n- gender: 性别（male/female）\n- age: 年龄\n- skin_type: 肤质（oily/dry/combination/sensitive）"
+					},
+					"response": []
+				}
+			],
+			"description": "用户注册、登录、信息管理相关接口"
+		},
+		{
+			"name": "2. 设备管理模块",
+			"item": [
+				{
+					"name": "2.1 绑定设备",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"device_id\": \"DEV_001\",\n    \"device_name\": \"我的皮肤检测仪\",\n    \"location\": \"家中\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/device/bind",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"device",
+								"bind"
+							]
+						},
+						"description": "将设备绑定到当前用户\n\n**请求参数**:\n- device_id: 设备ID（必填）\n- device_name: 设备名称（可选）\n- location: 使用位置（可选）"
+					},
+					"response": []
+				},
+				{
+					"name": "2.2 获取设备列表",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/device/list?page=1&per_page=20",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"device",
+								"list"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "1",
+									"description": "页码"
+								},
+								{
+									"key": "per_page",
+									"value": "20",
+									"description": "每页数量"
+								}
+							]
+						},
+						"description": "获取当前用户绑定的设备列表\n\n**查询参数**:\n- page: 页码（默认1）\n- per_page: 每页数量（默认20）"
+					},
+					"response": []
+				},
+				{
+					"name": "2.3 获取设备状态",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/device/status/DEV_001",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"device",
+								"status",
+								"DEV_001"
+							]
+						},
+						"description": "获取指定设备的实时状态\n\n**路径参数**:\n- device_id: 设备ID"
+					},
+					"response": []
+				}
+			],
+			"description": "设备绑定、列表查询、状态监控相关接口"
+		},
+		{
+			"name": "3. 数据查询模块",
+			"item": [
+				{
+					"name": "3.1 查询皮肤数据",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/data/skin?days=7&page=1&per_page=20",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"data",
+								"skin"
+							],
+							"query": [
+								{
+									"key": "device_id",
+									"value": "",
+									"description": "设备ID（可选）",
+									"disabled": true
+								},
+								{
+									"key": "days",
+									"value": "7",
+									"description": "最近N天"
+								},
+								{
+									"key": "start_date",
+									"value": "",
+									"description": "开始日期 YYYY-MM-DD",
+									"disabled": true
+								},
+								{
+									"key": "end_date",
+									"value": "",
+									"description": "结束日期 YYYY-MM-DD",
+									"disabled": true
+								},
+								{
+									"key": "page",
+									"value": "1",
+									"description": "页码"
+								},
+								{
+									"key": "per_page",
+									"value": "20",
+									"description": "每页数量"
+								}
+							]
+						},
+						"description": "查询皮肤传感器数据\n\n**查询参数**:\n- device_id: 设备ID（不传则查询所有设备）\n- days: 最近N天（与日期范围二选一）\n- start_date: 开始日期\n- end_date: 结束日期\n- page: 页码\n- per_page: 每页数量"
+					},
+					"response": []
+				},
+				{
+					"name": "3.2 查询环境数据",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/data/environment?days=7&page=1&per_page=20",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"data",
+								"environment"
+							],
+							"query": [
+								{
+									"key": "device_id",
+									"value": "",
+									"description": "设备ID",
+									"disabled": true
+								},
+								{
+									"key": "days",
+									"value": "7",
+									"description": "最近N天"
+								},
+								{
+									"key": "page",
+									"value": "1",
+									"description": "页码"
+								},
+								{
+									"key": "per_page",
+									"value": "20",
+									"description": "每页数量"
+								}
+							]
+						},
+						"description": "查询环境传感器数据\n\n**查询参数**:\n- device_id: 设备ID\n- days: 最近N天\n- start_date: 开始日期\n- end_date: 结束日期\n- page: 页码\n- per_page: 每页数量"
+					},
+					"response": []
+				},
+				{
+					"name": "3.3 查询统计数据",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/data/statistics?days=30",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"data",
+								"statistics"
+							],
+							"query": [
+								{
+									"key": "days",
+									"value": "30",
+									"description": "最近N天，默认7"
+								},
+								{
+									"key": "start_date",
+									"value": "",
+									"description": "开始日期",
+									"disabled": true
+								},
+								{
+									"key": "end_date",
+									"value": "",
+									"description": "结束日期",
+									"disabled": true
+								}
+							]
+						},
+						"description": "查询每日统计数据（平均值、活跃设备数等）\n\n**查询参数**:\n- days: 最近N天（默认7）\n- start_date: 开始日期\n- end_date: 结束日期"
+					},
+					"response": []
+				}
+			],
+			"description": "皮肤数据、环境数据、统计数据查询接口"
+		},
+		{
+			"name": "4. 健康报告模块",
+			"item": [
+				{
+					"name": "4.1 获取报告列表",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/report/list?page=1&per_page=10",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"report",
+								"list"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "1",
+									"description": "页码"
+								},
+								{
+									"key": "per_page",
+									"value": "10",
+									"description": "每页数量"
+								},
+								{
+									"key": "report_type",
+									"value": "",
+									"description": "报告类型 daily/weekly/monthly",
+									"disabled": true
+								}
+							]
+						},
+						"description": "获取健康报告列表\n\n**查询参数**:\n- page: 页码\n- per_page: 每页数量\n- report_type: 报告类型（daily/weekly/monthly）"
+					},
+					"response": []
+				},
+				{
+					"name": "4.2 获取报告详情",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/report/detail/1",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"report",
+								"detail",
+								"1"
+							]
+						},
+						"description": "获取指定报告的详细信息\n\n**路径参数**:\n- report_id: 报告ID"
+					},
+					"response": []
+				}
+			],
+			"description": "健康报告生成和查询接口"
+		},
+		{
+			"name": "5. 通知模块",
+			"item": [
+				{
+					"name": "5.1 获取通知列表",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/notification/list?page=1&per_page=20",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"notification",
+								"list"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "1",
+									"description": "页码"
+								},
+								{
+									"key": "per_page",
+									"value": "20",
+									"description": "每页数量"
+								},
+								{
+									"key": "is_read",
+									"value": "",
+									"description": "是否已读 true/false/null",
+									"disabled": true
+								}
+							]
+						},
+						"description": "获取通知列表\n\n**查询参数**:\n- page: 页码\n- per_page: 每页数量\n- is_read: 是否已读（true=已读, false=未读, null=全部）"
+					},
+					"response": []
+				},
+				{
+					"name": "5.2 标记通知为已读",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PUT",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/notification/read/1",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"notification",
+								"read",
+								"1"
+							]
+						},
+						"description": "将指定通知标记为已读\n\n**路径参数**:\n- notification_id: 通知ID"
+					},
+					"response": []
+				}
+			],
+			"description": "消息通知相关接口"
+		}
+	]
+}
