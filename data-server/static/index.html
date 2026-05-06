@@ -611,16 +611,16 @@
                     loadSkinData();
                     break;
                 case 'environmentData':
-                    loadEnvironmentData();
+                    loadEnvironmentPage();
                     break;
                 case 'statistics':
-                    loadStatistics();
+                    loadStatisticsPage();
                     break;
                 case 'reports':
-                    loadReports();
+                    loadReportsPage();
                     break;
                 case 'notifications':
-                    loadNotifications();
+                    loadNotificationsPage();
                     break;
             }
             
@@ -716,39 +716,86 @@
         
         // 加载仪表板统计数据
         async function loadDashboardStats() {
-            // 获取设备列表
-            const devicesResult = await apiRequest('/device/list?page=1&per_page=100');
-            if (devicesResult && devicesResult.success) {
-                const devices = devicesResult.data.items || [];
-                document.getElementById('deviceCount').textContent = devices.length;
-                
-                const onlineDevices = devices.filter(d => d.status === 'online');
-                document.getElementById('onlineCount').textContent = onlineDevices.length;
-            }
-            
-            // 获取未读通知
-            const notifResult = await apiRequest('/notification/list?is_read=false&page=1&per_page=1');
-            if (notifResult && notifResult.success) {
-                // 通知接口返回的是 notifications 数组和 pagination 对象
-                const notifications = notifResult.notifications || [];
-                const pagination = notifResult.pagination || {};
-                document.getElementById('unreadNotifications').textContent = pagination.total || 0;
-                
-                // 更新侧边栏徽章
-                const badge = document.getElementById('notificationBadge');
-                if (pagination.total > 0) {
-                    badge.textContent = pagination.total;
-                    badge.style.display = 'inline';
-                } else {
-                    badge.style.display = 'none';
+            try {
+                // 获取设备列表
+                const devicesResult = await apiRequest('/device/list?page=1&per_page=100');
+                if (devicesResult && devicesResult.success) {
+                    const devices = devicesResult.devices || [];
+                    document.getElementById('deviceCount').textContent = devices.length;
+                    
+                    const onlineDevices = devices.filter(d => d.status === 'online');
+                    document.getElementById('onlineCount').textContent = onlineDevices.length;
                 }
+                
+                // 获取今日数据（从统计接口）
+                const today = new Date().toISOString().split('T')[0];
+                const statsResult = await apiRequest(`/data/statistics?start_date=${today}&end_date=${today}`);
+                if (statsResult && statsResult.success) {
+                    const statistics = statsResult.statistics || [];
+                    const todayRecords = statistics.reduce((sum, s) => sum + (s.total_records || 0), 0);
+                    document.getElementById('todayRecords').textContent = todayRecords.toLocaleString();
+                }
+                
+                // 获取未读通知
+                const notifResult = await apiRequest('/notification/list?is_read=false&page=1&per_page=1');
+                if (notifResult && notifResult.success) {
+                    const pagination = notifResult.pagination || {};
+                    const unreadCount = pagination.total || 0;
+                    document.getElementById('unreadNotifications').textContent = unreadCount;
+                    
+                    // 更新侧边栏徽章
+                    const badge = document.getElementById('notificationBadge');
+                    if (badge) {
+                        if (unreadCount > 0) {
+                            badge.textContent = unreadCount;
+                            badge.style.display = 'inline';
+                        } else {
+                            badge.style.display = 'none';
+                        }
+                    }
+                }
+                
+                // 加载最新动态
+                loadRecentActivity();
+                
+                // 加载图表数据
+                loadDashboardChart();
+            } catch (error) {
+                console.error('加载仪表板数据失败:', error);
             }
-            
-            // 今日数据记录数（模拟）
-            document.getElementById('todayRecords').textContent = '-';
-            
-            // 加载图表数据
-            loadDashboardChart();
+        }
+        
+        // 加载最新动态
+        async function loadRecentActivity() {
+            try {
+                const container = document.getElementById('recentActivity');
+                if (!container) return;
+                
+                // 获取最近的通知作为动态
+                const result = await apiRequest('/notification/list?page=1&per_page=5');
+                if (result && result.success) {
+                    const notifications = result.notifications || [];
+                    
+                    if (notifications.length === 0) {
+                        container.innerHTML = '<p class="text-muted">暂无动态</p>';
+                        return;
+                    }
+                    
+                    container.innerHTML = notifications.map(notif => `
+                        <div class="d-flex align-items-start mb-3 pb-3 border-bottom">
+                            <i class="fas fa-bell text-primary me-2 mt-1"></i>
+                            <div class="flex-grow-1">
+                                <div class="small fw-bold">${notif.title || '系统通知'}</div>
+                                <div class="small text-muted">${formatDateTime(notif.created_at)}</div>
+                            </div>
+                        </div>
+                    `).join('');
+                } else {
+                    container.innerHTML = '<p class="text-muted">加载失败</p>';
+                }
+            } catch (error) {
+                console.error('加载最新动态失败:', error);
+            }
         }
         
         // 加载仪表板图表
@@ -1217,48 +1264,611 @@
             }
         }
         
-        // 加载环境数据（类似皮肤数据，略）
-        async function loadEnvironmentData() {
+        // 加载环境数据页面
+        async function loadEnvironmentPage() {
             const content = `
-                <h2 class="mb-4"><i class="fas fa-cloud-sun me-2"></i>环境数据</h2>
-                <div class="alert alert-info">
-                    <i class="fas fa-info-circle me-2"></i>功能开发中...
+                <h2 class="mb-4"><i class="fas fa-cloud-sun me-2"></i>环境数据监测</h2>
+                
+                <!-- 筛选条件 -->
+                <div class="card mb-4 shadow-sm">
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-md-3">
+                                <label class="form-label">时间范围</label>
+                                <select class="form-select" id="envTimeRange">
+                                    <option value="7">最近7天</option>
+                                    <option value="30" selected>最近30天</option>
+                                    <option value="90">最近90天</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">设备选择</label>
+                                <select class="form-select" id="envDeviceSelect">
+                                    <option value="">全部设备</option>
+                                </select>
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label">每页数量</label>
+                                <select class="form-select" id="envPerPage">
+                                    <option value="10">10条</option>
+                                    <option value="20" selected>20条</option>
+                                    <option value="50">50条</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4 d-flex align-items-end">
+                                <button class="btn btn-primary me-2" onclick="loadEnvDataTable(1)">
+                                    <i class="fas fa-search me-1"></i>查询
+                                </button>
+                                <button class="btn btn-success" onclick="exportEnvData()">
+                                    <i class="fas fa-download me-1"></i>导出
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 数据表格 -->
+                <div class="card shadow-sm">
+                    <div class="card-header bg-white py-3">
+                        <h5 class="mb-0"><i class="fas fa-table me-2"></i>环境监测记录</h5>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>设备ID</th>
+                                        <th>温度(°C)</th>
+                                        <th>湿度(%)</th>
+                                        <th>PM2.5</th>
+                                        <th>CO2(ppm)</th>
+                                        <th>检测时间</th>
+                                        <th>接收时间</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="envDataTableBody">
+                                    <tr>
+                                        <td colspan="8" class="text-center py-5">
+                                            <div class="spinner-border text-primary" role="status">
+                                                <span class="visually-hidden">加载中...</span>
+                                            </div>
+                                            <p class="mt-3 text-muted">正在加载数据...</p>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="card-footer bg-white">
+                        <nav>
+                            <ul class="pagination justify-content-center mb-0" id="envPagination"></ul>
+                        </nav>
+                    </div>
                 </div>
             `;
+            
             document.getElementById('pageContent').innerHTML = content;
+            loadEnvDevices();
+            loadEnvDataTable(1);
+        }
+        
+        // 加载环境设备列表
+        async function loadEnvDevices() {
+            try {
+                const result = await apiRequest('/device/list');
+                if (result && result.success) {
+                    const devices = result.devices || [];
+                    const select = document.getElementById('envDeviceSelect');
+                    devices.forEach(device => {
+                        const option = document.createElement('option');
+                        option.value = device.device_id;
+                        option.textContent = `${device.device_id} (${device.location || '未知'})`;
+                        select.appendChild(option);
+                    });
+                }
+            } catch (error) {
+                console.error('加载设备列表失败:', error);
+            }
+        }
+        
+        // 加载环境数据表格
+        async function loadEnvDataTable(page = 1) {
+            const days = document.getElementById('envTimeRange')?.value || 30;
+            const deviceId = document.getElementById('envDeviceSelect')?.value || '';
+            const perPage = document.getElementById('envPerPage')?.value || 20;
+            
+            let url = `/data/environment?days=${days}&page=${page}&per_page=${perPage}`;
+            if (deviceId) {
+                url += `&device_id=${deviceId}`;
+            }
+            
+            const result = await apiRequest(url);
+            
+            if (result && result.success) {
+                let items = [];
+                if (Array.isArray(result.data)) {
+                    items = result.data;
+                } else if (result.data && typeof result.data === 'object') {
+                    items = result.data.items || [];
+                }
+                
+                const tbody = document.getElementById('envDataTableBody');
+                
+                if (items.length === 0) {
+                    tbody.innerHTML = `
+                        <tr>
+                            <td colspan="8" class="text-center text-muted py-5">
+                                <i class="fas fa-inbox fa-3x mb-3 text-gray-300"></i>
+                                <p>暂无环境数据</p>
+                            </td>
+                        </tr>
+                    `;
+                    return;
+                }
+                
+                tbody.innerHTML = items.map(item => `
+                    <tr>
+                        <td>${item.id}</td>
+                        <td><code>${item.device_id}</code></td>
+                        <td><span class="badge bg-info">${item.temperature?.toFixed(1) || '-'}</span></td>
+                        <td><span class="badge bg-success">${item.humidity?.toFixed(1) || '-'}</span></td>
+                        <td><span class="badge ${getPM25BadgeClass(item.pm25)}">${item.pm25 || '-'}</span></td>
+                        <td><span class="badge bg-warning text-dark">${item.co2 || '-'}</span></td>
+                        <td>${formatDateTime(item.sensor_time)}</td>
+                        <td>${formatDateTime(item.received_at)}</td>
+                    </tr>
+                `).join('');
+                
+                updatePagination('envPagination', page, result.pagination?.pages || 1, loadEnvDataTable);
+            } else {
+                document.getElementById('envDataTableBody').innerHTML = `
+                    <tr>
+                        <td colspan="8" class="text-center text-danger">
+                            加载失败：${result?.message || '未知错误'}
+                        </td>
+                    </tr>
+                `;
+            }
+        }
+        
+        // 获取PM2.5徽章样式
+        function getPM25BadgeClass(pm25) {
+            if (!pm25) return 'bg-secondary';
+            if (pm25 <= 35) return 'bg-success';
+            if (pm25 <= 75) return 'bg-warning text-dark';
+            return 'bg-danger';
+        }
+        
+        // 导出环境数据
+        function exportEnvData() {
+            showToast('导出功能开发中...', 'info');
+        }
+        
+        // 加载统计分析页面
+        async function loadStatisticsPage() {
+            const content = `
+                <h2 class="mb-4"><i class="fas fa-chart-line me-2"></i>统计分析</h2>
+                
+                <!-- 统计卡片 -->
+                <div class="row g-4 mb-4">
+                    <div class="col-md-3">
+                        <div class="card border-0 shadow-sm h-100">
+                            <div class="card-body text-center">
+                                <i class="fas fa-database fa-3x text-primary mb-3"></i>
+                                <h3 class="mb-1" id="statTotalRecords">-</h3>
+                                <p class="text-muted mb-0">总数据量</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card border-0 shadow-sm h-100">
+                            <div class="card-body text-center">
+                                <i class="fas fa-calendar-alt fa-3x text-success mb-3"></i>
+                                <h3 class="mb-1" id="statDays">-</h3>
+                                <p class="text-muted mb-0">监测天数</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card border-0 shadow-sm h-100">
+                            <div class="card-body text-center">
+                                <i class="fas fa-tint fa-3x text-info mb-3"></i>
+                                <h3 class="mb-1" id="statAvgMoisture">-</h3>
+                                <p class="text-muted mb-0">平均水分</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card border-0 shadow-sm h-100">
+                            <div class="card-body text-center">
+                                <i class="fas fa-oil-can fa-3x text-warning mb-3"></i>
+                                <h3 class="mb-1" id="statAvgOiliness">-</h3>
+                                <p class="text-muted mb-0">平均油性</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 趋势图表 -->
+                <div class="card shadow-sm mb-4">
+                    <div class="card-header bg-white py-3">
+                        <h5 class="mb-0"><i class="fas fa-chart-area me-2"></i>数据趋势分析</h5>
+                    </div>
+                    <div class="card-body">
+                        <canvas id="statisticsChart" height="100"></canvas>
+                    </div>
+                </div>
+                
+                <!-- 详细统计表格 -->
+                <div class="card shadow-sm">
+                    <div class="card-header bg-white py-3">
+                        <h5 class="mb-0"><i class="fas fa-list me-2"></i>每日统计明细</h5>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>日期</th>
+                                        <th>数据量</th>
+                                        <th>平均水分</th>
+                                        <th>平均油性</th>
+                                        <th>最高温度</th>
+                                        <th>最低温度</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="statisticsTableBody">
+                                    <tr>
+                                        <td colspan="6" class="text-center py-5">
+                                            <div class="spinner-border text-primary" role="status">
+                                                <span class="visually-hidden">加载中...</span>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            document.getElementById('pageContent').innerHTML = content;
+            loadStatisticsData();
         }
         
         // 加载统计数据
-        async function loadStatistics() {
-            const content = `
-                <h2 class="mb-4"><i class="fas fa-chart-line me-2"></i>统计分析</h2>
-                <div class="alert alert-info">
-                    <i class="fas fa-info-circle me-2"></i>功能开发中...
-                </div>
-            `;
-            document.getElementById('pageContent').innerHTML = content;
+        async function loadStatisticsData() {
+            try {
+                const result = await apiRequest('/data/statistics?days=30');
+                
+                if (result && result.success) {
+                    const statistics = result.statistics || [];
+                    
+                    // 更新统计卡片
+                    const totalRecords = statistics.reduce((sum, s) => sum + (s.total_records || 0), 0);
+                    document.getElementById('statTotalRecords').textContent = totalRecords.toLocaleString();
+                    document.getElementById('statDays').textContent = statistics.length;
+                    
+                    if (statistics.length > 0) {
+                        const avgMoisture = statistics.reduce((sum, s) => sum + (s.avg_moisture || 0), 0) / statistics.length;
+                        const avgOiliness = statistics.reduce((sum, s) => sum + (s.avg_oiliness || 0), 0) / statistics.length;
+                        document.getElementById('statAvgMoisture').textContent = avgMoisture.toFixed(1) + '%';
+                        document.getElementById('statAvgOiliness').textContent = avgOiliness.toFixed(1) + '%';
+                        
+                        // 绘制趋势图
+                        drawStatisticsChart(statistics);
+                    }
+                    
+                    // 填充表格
+                    const tbody = document.getElementById('statisticsTableBody');
+                    if (statistics.length === 0) {
+                        tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-4">暂无统计数据</td></tr>';
+                    } else {
+                        tbody.innerHTML = statistics.slice(0, 30).map(stat => `
+                            <tr>
+                                <td>${formatDate(stat.stat_date)}</td>
+                                <td>${stat.total_records || 0}</td>
+                                <td>${(stat.avg_moisture || 0).toFixed(1)}%</td>
+                                <td>${(stat.avg_oiliness || 0).toFixed(1)}%</td>
+                                <td>${(stat.max_temperature || 0).toFixed(1)}°C</td>
+                                <td>${(stat.min_temperature || 0).toFixed(1)}°C</td>
+                            </tr>
+                        `).join('');
+                    }
+                }
+            } catch (error) {
+                console.error('加载统计数据失败:', error);
+            }
         }
         
-        // 加载健康报告
-        async function loadReports() {
+        // 绘制统计图表
+        function drawStatisticsChart(statistics) {
+            const ctx = document.getElementById('statisticsChart');
+            if (!ctx) return;
+            
+            const labels = statistics.map(s => formatDate(s.stat_date)).reverse();
+            const moistureData = statistics.map(s => s.avg_moisture || 0).reverse();
+            const oilinessData = statistics.map(s => s.avg_oiliness || 0).reverse();
+            
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: '平均水分',
+                        data: moistureData,
+                        borderColor: '#4e73df',
+                        backgroundColor: 'rgba(78, 115, 223, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    }, {
+                        label: '平均油性',
+                        data: oilinessData,
+                        borderColor: '#1cc88a',
+                        backgroundColor: 'rgba(28, 200, 138, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: { position: 'top' }
+                    },
+                    scales: {
+                        y: { beginAtZero: false }
+                    }
+                }
+            });
+        }
+        
+        // 加载健康报告页面
+        async function loadReportsPage() {
             const content = `
                 <h2 class="mb-4"><i class="fas fa-file-medical me-2"></i>健康报告</h2>
-                <div class="alert alert-info">
-                    <i class="fas fa-info-circle me-2"></i>功能开发中...
+                
+                <!-- 报告类型筛选 -->
+                <div class="card mb-4 shadow-sm">
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <label class="form-label">报告类型</label>
+                                <select class="form-select" id="reportTypeFilter">
+                                    <option value="">全部类型</option>
+                                    <option value="daily">日报</option>
+                                    <option value="weekly">周报</option>
+                                    <option value="monthly">月报</option>
+                                </select>
+                            </div>
+                            <div class="col-md-2 d-flex align-items-end">
+                                <button class="btn btn-primary w-100" onclick="loadReportList()">
+                                    <i class="fas fa-filter me-1"></i>筛选
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 报告列表 -->
+                <div class="row g-4" id="reportListContainer">
+                    <div class="col-12 text-center py-5">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">加载中...</span>
+                        </div>
+                        <p class="mt-3 text-muted">正在加载报告...</p>
+                    </div>
                 </div>
             `;
+            
             document.getElementById('pageContent').innerHTML = content;
+            loadReportList();
         }
         
-        // 加载通知
-        async function loadNotifications() {
+        // 加载报告列表
+        async function loadReportList() {
+            const reportType = document.getElementById('reportTypeFilter')?.value || '';
+            let url = '/report/list';
+            if (reportType) {
+                url += `?type=${reportType}`;
+            }
+            
+            const result = await apiRequest(url);
+            
+            if (result && result.success) {
+                const reports = result.reports || [];
+                const container = document.getElementById('reportListContainer');
+                
+                if (reports.length === 0) {
+                    container.innerHTML = `
+                        <div class="col-12 text-center py-5">
+                            <i class="fas fa-inbox fa-4x text-gray-300 mb-3"></i>
+                            <p class="text-muted">暂无健康报告</p>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                container.innerHTML = reports.map(report => {
+                    const typeLabels = { daily: '日报', weekly: '周报', monthly: '月报' };
+                    const typeColors = { daily: 'primary', weekly: 'success', monthly: 'info' };
+                    const scoreColor = report.score >= 80 ? 'success' : report.score >= 60 ? 'warning' : 'danger';
+                    
+                    return `
+                        <div class="col-md-6 col-lg-4">
+                            <div class="card h-100 shadow-sm hover-shadow transition-all">
+                                <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                                    <span class="badge bg-${typeColors[report.report_type] || 'secondary'}">
+                                        ${typeLabels[report.report_type] || '报告'}
+                                    </span>
+                                    <small class="text-muted">${formatDate(report.report_date)}</small>
+                                </div>
+                                <div class="card-body">
+                                    <h5 class="card-title mb-3">${report.title || '健康报告'}</h5>
+                                    <div class="d-flex justify-content-between align-items-center mb-3">
+                                        <span class="text-muted">综合评分</span>
+                                        <span class="badge bg-${scoreColor} fs-5">${report.score || 0}分</span>
+                                    </div>
+                                    <p class="card-text text-muted small mb-3">
+                                        ${report.summary || '暂无摘要'}
+                                    </p>
+                                    <button class="btn btn-outline-primary btn-sm w-100" onclick="viewReportDetail(${report.id})">
+                                        <i class="fas fa-eye me-1"></i>查看详情
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            }
+        }
+        
+        // 查看报告详情
+        async function viewReportDetail(reportId) {
+            try {
+                const result = await apiRequest(`/report/detail/${reportId}`);
+                
+                if (result && result.success) {
+                    const report = result.report;
+                    alert(`报告详情：\n\n标题：${report.title}\n日期：${formatDate(report.report_date)}\n评分：${report.score}分\n\n摘要：${report.summary}\n\n建议：${report.suggestions || '暂无建议'}`);
+                }
+            } catch (error) {
+                showToast('加载报告详情失败', 'danger');
+            }
+        }
+        
+        // 加载通知中心页面
+        async function loadNotificationsPage() {
             const content = `
                 <h2 class="mb-4"><i class="fas fa-bell me-2"></i>通知中心</h2>
-                <div class="alert alert-info">
-                    <i class="fas fa-info-circle me-2"></i>功能开发中...
+                
+                <!-- 筛选条件 -->
+                <div class="card mb-4 shadow-sm">
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-md-3">
+                                <label class="form-label">通知类型</label>
+                                <select class="form-select" id="notifTypeFilter">
+                                    <option value="">全部类型</option>
+                                    <option value="system">系统通知</option>
+                                    <option value="device">设备提醒</option>
+                                    <option value="report">报告生成</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">阅读状态</label>
+                                <select class="form-select" id="notifReadFilter">
+                                    <option value="">全部</option>
+                                    <option value="false">未读</option>
+                                    <option value="true">已读</option>
+                                </select>
+                            </div>
+                            <div class="col-md-2 d-flex align-items-end">
+                                <button class="btn btn-primary w-100" onclick="loadNotificationList()">
+                                    <i class="fas fa-search me-1"></i>查询
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 通知列表 -->
+                <div class="card shadow-sm">
+                    <div class="card-body p-0">
+                        <div id="notificationListContainer">
+                            <div class="text-center py-5">
+                                <div class="spinner-border text-primary" role="status">
+                                    <span class="visually-hidden">加载中...</span>
+                                </div>
+                                <p class="mt-3 text-muted">正在加载通知...</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-footer bg-white">
+                        <nav>
+                            <ul class="pagination justify-content-center mb-0" id="notifPagination"></ul>
+                        </nav>
+                    </div>
                 </div>
             `;
+            
             document.getElementById('pageContent').innerHTML = content;
+            loadNotificationList();
+        }
+        
+        // 加载通知列表
+        async function loadNotificationList(page = 1) {
+            const type = document.getElementById('notifTypeFilter')?.value || '';
+            const isRead = document.getElementById('notifReadFilter')?.value;
+            
+            let url = `/notification/list?page=${page}&per_page=20`;
+            if (type) url += `&type=${type}`;
+            if (isRead !== '') url += `&is_read=${isRead}`;
+            
+            const result = await apiRequest(url);
+            
+            if (result && result.success) {
+                const notifications = result.notifications || [];
+                const container = document.getElementById('notificationListContainer');
+                
+                if (notifications.length === 0) {
+                    container.innerHTML = `
+                        <div class="text-center py-5">
+                            <i class="fas fa-bell-slash fa-4x text-gray-300 mb-3"></i>
+                            <p class="text-muted">暂无通知</p>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                container.innerHTML = notifications.map(notif => {
+                    const typeIcons = {
+                        system: 'fa-cog text-primary',
+                        device: 'fa-microchip text-success',
+                        report: 'fa-file-alt text-info',
+                        warning: 'fa-exclamation-triangle text-warning'
+                    };
+                    const iconClass = typeIcons[notif.type] || 'fa-bell text-secondary';
+                    
+                    return `
+                        <div class="list-group-item list-group-item-action ${!notif.is_read ? 'bg-light' : ''}">
+                            <div class="d-flex w-100 justify-content-between align-items-start">
+                                <div class="d-flex align-items-start">
+                                    <i class="fas ${iconClass} fa-lg me-3 mt-1"></i>
+                                    <div>
+                                        <h6 class="mb-1 ${!notif.is_read ? 'fw-bold' : ''}">${notif.title || '通知'}</h6>
+                                        <p class="mb-1 text-muted small">${notif.content || ''}</p>
+                                        <small class="text-muted">${formatDateTime(notif.created_at)}</small>
+                                    </div>
+                                </div>
+                                <div>
+                                    ${!notif.is_read ? `<span class="badge bg-danger">未读</span>` : ''}
+                                    ${!notif.is_read ? `
+                                        <button class="btn btn-sm btn-outline-primary ms-2" onclick="markNotifRead(${notif.id})">
+                                            标记已读
+                                        </button>
+                                    ` : ''}
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+                
+                updatePagination('notifPagination', page, result.pagination?.pages || 1, loadNotificationList);
+            }
+        }
+        
+        // 标记通知已读
+        async function markNotifRead(notifId) {
+            try {
+                const result = await apiRequest(`/notification/read/${notifId}`, { method: 'PUT' });
+                if (result && result.success) {
+                    showToast('已标记为已读', 'success');
+                    loadNotificationList();
+                }
+            } catch (error) {
+                showToast('操作失败', 'danger');
+            }
         }
         
         // ==================== 辅助函数 ====================
