@@ -585,6 +585,401 @@ def mark_notification_read(current_user, notification_id):
 
 
 # =====================================================
+# 积分等级系统接口
+# =====================================================
+
+@miniprogram_bp.route('/points/info', methods=['GET'])
+@token_required
+def get_points_info(current_user):
+    """获取用户积分信息"""
+    try:
+        from models import UserPoints
+        
+        points = UserPoints.query.filter_by(user_id=current_user.id).first()
+        
+        if not points:
+            # 创建默认积分记录
+            points = UserPoints(
+                user_id=current_user.id,
+                total_points=0,
+                available_points=0,
+                used_points=0,
+                expired_points=0,
+                level='bronze'
+            )
+            db.session.add(points)
+            db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'points': points.to_dict()
+        }), 200
+        
+    except Exception as e:
+        logger.error(f"获取积分信息失败: {str(e)}")
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+
+@miniprogram_bp.route('/points/history', methods=['GET'])
+@token_required
+def get_points_history(current_user):
+    """获取积分历史记录"""
+    try:
+        from models import PointsHistory
+        
+        page = request.args.get('page', 1, type=int)
+        per_page = request.args.get('per_page', 20, type=int)
+        
+        query = PointsHistory.query.filter_by(user_id=current_user.id)
+        query = query.order_by(PointsHistory.created_at.desc())
+        
+        pagination = query.paginate(page=page, per_page=per_page, error_out=False)
+        history = [item.to_dict() for item in pagination.items]
+        
+        return jsonify({
+            'success': True,
+            'history': history,
+            'pagination': {
+                'page': page,
+                'per_page': per_page,
+                'total': pagination.total,
+                'pages': pagination.pages
+            }
+        }), 200
+        
+    except Exception as e:
+        logger.error(f"获取积分历史失败: {str(e)}")
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+
+# =====================================================
+# 社区互动接口
+# =====================================================
+
+@miniprogram_bp.route('/community/posts', methods=['GET'])
+@token_required
+def get_community_posts(current_user):
+    """获取社区帖子列表"""
+    try:
+        from models import CommunityPost
+        
+        page = request.args.get('page', 1, type=int)
+        per_page = request.args.get('per_page', 20, type=int)
+        category = request.args.get('category')  # experience/question/tips
+        
+        query = CommunityPost.query
+        
+        if category:
+            query = query.filter_by(category=category)
+        
+        query = query.order_by(CommunityPost.created_at.desc())
+        pagination = query.paginate(page=page, per_page=per_page, error_out=False)
+        
+        posts = []
+        for post in pagination.items:
+            post_dict = post.to_dict()
+            # 添加作者信息
+            author = User.query.get(post.user_id)
+            if author:
+                post_dict['author'] = {
+                    'username': author.username,
+                    'nickname': author.nickname,
+                    'avatar_url': author.avatar_url
+                }
+            posts.append(post_dict)
+        
+        return jsonify({
+            'success': True,
+            'posts': posts,
+            'pagination': {
+                'page': page,
+                'per_page': per_page,
+                'total': pagination.total,
+                'pages': pagination.pages
+            }
+        }), 200
+        
+    except Exception as e:
+        logger.error(f"获取帖子列表失败: {str(e)}")
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+
+@miniprogram_bp.route('/community/posts', methods=['POST'])
+@token_required
+def create_post(current_user):
+    """发布帖子"""
+    try:
+        from models import CommunityPost
+        
+        data = request.get_json()
+        
+        required_fields = ['title', 'content', 'category']
+        for field in required_fields:
+            if field not in data:
+                return jsonify({'success': False, 'message': f'缺少必填字段: {field}'}), 400
+        
+        post = CommunityPost(
+            user_id=current_user.id,
+            title=data['title'],
+            content=data['content'],
+            category=data['category'],
+            tags=data.get('tags', [])
+        )
+        
+        db.session.add(post)
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': '发布成功',
+            'post_id': post.id
+        }), 201
+        
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"发布帖子失败: {str(e)}")
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+
+@miniprogram_bp.route('/community/posts/<int:post_id>/comments', methods=['GET'])
+@token_required
+def get_post_comments(current_user, post_id):
+    """获取帖子评论"""
+    try:
+        from models import PostComment
+        
+        page = request.args.get('page', 1, type=int)
+        per_page = request.args.get('per_page', 20, type=int)
+        
+        query = PostComment.query.filter_by(post_id=post_id)
+        query = query.order_by(PostComment.created_at.asc())
+        
+        pagination = query.paginate(page=page, per_page=per_page, error_out=False)
+        comments = [item.to_dict() for item in pagination.items]
+        
+        return jsonify({
+            'success': True,
+            'comments': comments,
+            'pagination': {
+                'page': page,
+                'per_page': per_page,
+                'total': pagination.total,
+                'pages': pagination.pages
+            }
+        }), 200
+        
+    except Exception as e:
+        logger.error(f"获取评论失败: {str(e)}")
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+
+@miniprogram_bp.route('/community/posts/<int:post_id>/comments', methods=['POST'])
+@token_required
+def create_comment(current_user, post_id):
+    """发表评论"""
+    try:
+        from models import PostComment
+        
+        data = request.get_json()
+        
+        if 'content' not in data:
+            return jsonify({'success': False, 'message': '评论内容不能为空'}), 400
+        
+        comment = PostComment(
+            post_id=post_id,
+            user_id=current_user.id,
+            content=data['content'],
+            parent_comment_id=data.get('parent_comment_id')
+        )
+        
+        db.session.add(comment)
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': '评论成功',
+            'comment_id': comment.id
+        }), 201
+        
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"发表评论失败: {str(e)}")
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+
+# =====================================================
+# 护肤记录接口
+# =====================================================
+
+@miniprogram_bp.route('/skincare/records', methods=['GET'])
+@token_required
+def get_skincare_records(current_user):
+    """获取护肤记录"""
+    try:
+        from models import UserSkincareRecord
+        
+        start_date = request.args.get('start_date')
+        end_date = request.args.get('end_date')
+        page = request.args.get('page', 1, type=int)
+        per_page = request.args.get('per_page', 20, type=int)
+        
+        query = UserSkincareRecord.query.filter_by(user_id=current_user.id)
+        
+        if start_date:
+            query = query.filter(UserSkincareRecord.usage_time >= datetime.fromisoformat(start_date))
+        
+        if end_date:
+            query = query.filter(UserSkincareRecord.usage_time <= datetime.fromisoformat(end_date))
+        
+        query = query.order_by(UserSkincareRecord.usage_time.desc())
+        pagination = query.paginate(page=page, per_page=per_page, error_out=False)
+        
+        records = [item.to_dict() for item in pagination.items]
+        
+        return jsonify({
+            'success': True,
+            'records': records,
+            'pagination': {
+                'page': page,
+                'per_page': per_page,
+                'total': pagination.total,
+                'pages': pagination.pages
+            }
+        }), 200
+        
+    except Exception as e:
+        logger.error(f"获取护肤记录失败: {str(e)}")
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+
+@miniprogram_bp.route('/skincare/records', methods=['POST'])
+@token_required
+def create_skincare_record(current_user):
+    """添加护肤记录"""
+    try:
+        from models import UserSkincareRecord
+        
+        data = request.get_json()
+        
+        required_fields = ['product_name', 'usage_time']
+        for field in required_fields:
+            if field not in data:
+                return jsonify({'success': False, 'message': f'缺少必填字段: {field}'}), 400
+        
+        record = UserSkincareRecord(
+            user_id=current_user.id,
+            product_id=data.get('product_id'),
+            product_name=data['product_name'],
+            usage_time=datetime.fromisoformat(data['usage_time']),
+            usage_amount=data.get('usage_amount'),
+            skin_feel=data.get('skin_feel'),
+            effect_rating=data.get('effect_rating'),
+            notes=data.get('notes')
+        )
+        
+        db.session.add(record)
+        
+        # 增加积分
+        from models import UserPoints
+        points = UserPoints.query.filter_by(user_id=current_user.id).first()
+        if points:
+            points.total_points += 10
+            points.available_points += 10
+            db.session.add(points)
+        
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': '记录成功，获得10积分',
+            'record_id': record.id
+        }), 201
+        
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"添加护肤记录失败: {str(e)}")
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+
+# =====================================================
+# 产品数据库接口
+# =====================================================
+
+@miniprogram_bp.route('/products', methods=['GET'])
+@token_required
+def get_products(current_user):
+    """获取产品列表"""
+    try:
+        from models import SkincareProduct
+        
+        category = request.args.get('category')
+        brand = request.args.get('brand')
+        page = request.args.get('page', 1, type=int)
+        per_page = request.args.get('per_page', 20, type=int)
+        
+        query = SkincareProduct.query
+        
+        if category:
+            query = query.filter_by(category=category)
+        
+        if brand:
+            query = query.filter_by(brand=brand)
+        
+        query = query.order_by(SkincareProduct.created_at.desc())
+        pagination = query.paginate(page=page, per_page=per_page, error_out=False)
+        
+        products = [item.to_dict() for item in pagination.items]
+        
+        return jsonify({
+            'success': True,
+            'products': products,
+            'pagination': {
+                'page': page,
+                'per_page': per_page,
+                'total': pagination.total,
+                'pages': pagination.pages
+            }
+        }), 200
+        
+    except Exception as e:
+        logger.error(f"获取产品列表失败: {str(e)}")
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+
+@miniprogram_bp.route('/products/recommend', methods=['GET'])
+@token_required
+def get_recommended_products(current_user):
+    """个性化产品推荐"""
+    try:
+        from models import SkincareProduct, UserProfile
+        
+        # 获取用户肤质档案
+        profile = UserProfile.query.filter_by(user_id=current_user.id).first()
+        
+        # 根据肤质推荐产品
+        query = SkincareProduct.query
+        
+        if profile and profile.skin_type:
+            # 简单推荐逻辑：根据肤质类型筛选
+            query = query.filter(
+                SkincareProduct.suitable_skin_types.contains(profile.skin_type)
+            )
+        
+        query = query.order_by(SkincareProduct.rating.desc()).limit(10)
+        products = [item.to_dict() for item in query.all()]
+        
+        return jsonify({
+            'success': True,
+            'recommended_products': products,
+            'based_on': profile.skin_type if profile else 'general'
+        }), 200
+        
+    except Exception as e:
+        logger.error(f"获取推荐产品失败: {str(e)}")
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+
+# =====================================================
 # 注册蓝图
 # =====================================================
 def init_app(app):
