@@ -13,7 +13,7 @@ import random
 # 添加项目路径
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from models import db, User, Device, DeviceBinding, SkinSensorData, EnvironmentSensorData, HealthReport, Notification
+from models import db, User, Device, DeviceBinding, SkinSensorData, EnvironmentSensorData, HealthReport, Notification, DailyStatistics
 from app_simple import app
 
 
@@ -72,31 +72,33 @@ def generate_test_data():
         
         db.session.commit()
         
-        # 2. 生成皮肤传感器数据（过去7天）
+        # 2. 生成皮肤传感器数据（过去30天，每小时1条）
         print("\n【步骤2】生成皮肤传感器数据...")
         skin_count = 0
         for device in [d for d in devices if d.device_type == 'skin_sensor']:
             device_name = f"{device.location}检测仪"
-            # 每天生成5-8条数据
-            for day_offset in range(7):
+            # 过去30天，每天生成14条数据（8:00-22:00，每小时1条）
+            for day_offset in range(30):
                 date = datetime.now() - timedelta(days=day_offset)
-                num_records = random.randint(5, 8)
                 
-                for _ in range(num_records):
-                    hour = random.randint(8, 22)
+                for hour in range(8, 22):  # 早上8点到晚上10点 (不含22点，即8-21点共14个小时)
                     minute = random.randint(0, 59)
                     sensor_time = date.replace(hour=hour, minute=minute, second=0)
                     
+                    # 根据时间段调整数值（早上水分高，晚上油性高）
+                    base_moisture = 65 if hour < 12 else 55
+                    base_oiliness = 35 if hour < 12 else 45
+                    
                     skin_data = SkinSensorData(
                         device_id=device.device_id,
-                        moisture=random.randint(30, 60),  # 水分 30-60%
-                        oiliness=random.randint(15, 45),  # 油分 15-45%
+                        moisture=random.randint(base_moisture - 10, base_moisture + 10),  # 水分波动
+                        oiliness=random.randint(base_oiliness - 8, base_oiliness + 8),  # 油分波动
                         temperature=random.uniform(32, 36),  # 温度 32-36°C
                         sensor_time=sensor_time,
                         received_at=datetime.now(),
-                        quality_score=random.uniform(70, 95),
+                        quality_score=random.uniform(75, 95),
                         client_ip='192.168.1.100',
-                        request_id=f'REQ_{int(datetime.now().timestamp())}',
+                        request_id=f'REQ_{int(sensor_time.timestamp())}',
                         validated=True
                     )
                     db.session.add(skin_data)
@@ -107,30 +109,34 @@ def generate_test_data():
         db.session.commit()
         print(f"  总计生成 {skin_count} 条皮肤数据")
         
-        # 3. 生成环境传感器数据
+        # 3. 生成环境传感器数据（过去30天，每2小时1条）
         print("\n【步骤3】生成环境传感器数据...")
         env_count = 0
         for device in [d for d in devices if d.device_type == 'environment']:
             device_name = f"{device.location}监测仪"
-            for day_offset in range(7):
+            for day_offset in range(30):
                 date = datetime.now() - timedelta(days=day_offset)
-                num_records = random.randint(4, 6)
                 
-                for _ in range(num_records):
-                    hour = random.randint(0, 23)
+                # 每2小时生成1条数据（一天12条）
+                for hour in range(0, 24, 2):
                     minute = random.randint(0, 59)
                     sensor_time = date.replace(hour=hour, minute=minute, second=0)
                     
+                    # 根据时间段调整温度和湿度
+                    base_temp = 22 if 6 <= hour <= 18 else 18  # 白天22度，晚上18度
+                    base_humidity = 45 if 6 <= hour <= 18 else 55
+                    
                     env_data = EnvironmentSensorData(
                         device_id=device.device_id,
-                        temperature=random.uniform(18, 28),  # 室温 18-28°C
-                        humidity=random.uniform(40, 70),  # 湿度 40-70%
-                        pm25=random.randint(10, 50),  # PM2.5 10-50
-                        co2=random.randint(400, 800),  # CO2 400-800ppm
-                        location=device.location,
+                        temperature=random.uniform(base_temp - 2, base_temp + 2),
+                        humidity=random.uniform(base_humidity - 5, base_humidity + 5),
+                        pm25=random.randint(15, 50),  # PM2.5: 15-50 (优良)
+                        co2=random.randint(400, 800),  # CO2: 400-800 ppm
                         sensor_time=sensor_time,
                         received_at=datetime.now(),
-                        quality_score=random.uniform(70, 95),
+                        quality_score=random.uniform(80, 98),
+                        client_ip='192.168.1.101',
+                        request_id=f'ENV_REQ_{int(sensor_time.timestamp())}',
                         validated=True
                     )
                     db.session.add(env_data)
@@ -141,8 +147,37 @@ def generate_test_data():
         db.session.commit()
         print(f"  总计生成 {env_count} 条环境数据")
         
-        # 4. 创建健康报告
-        print("\n【步骤4】创建健康报告...")
+        # 4. 生成每日统计数据（Dashboard图表数据源）
+        print("\n【步骤4】生成每日统计数据...")
+        stats_count = 0
+        for day_offset in range(30):
+            stat_date = (datetime.now() - timedelta(days=day_offset)).date()
+            
+            # 计算当天的平均值（模拟）
+            avg_moisture = random.uniform(58, 68)  # 水分 58-68%
+            avg_oiliness = random.uniform(38, 48)  # 油性 38-48%
+            avg_elasticity = random.uniform(72, 82)  # 弹性 72-82%
+            avg_temperature = random.uniform(20, 24)  # 环境温度
+            avg_humidity = random.uniform(45, 55)  # 环境湿度
+            
+            daily_stat = DailyStatistics(
+                stat_date=stat_date,
+                avg_moisture=round(avg_moisture, 2),
+                avg_oiliness=round(avg_oiliness, 2),
+                avg_temperature=round(avg_temperature, 2),
+                avg_humidity=round(avg_humidity, 2),
+                total_records=random.randint(10, 20),
+                active_devices=3,
+                created_at=datetime.now()
+            )
+            db.session.add(daily_stat)
+            stats_count += 1
+        
+        db.session.commit()
+        print(f"  ✓ 生成 {stats_count} 条每日统计数据（过去30天）")
+        
+        # 5. 创建健康报告
+        print("\n【步骤5】创建健康报告...")
         reports = [
             {
                 'title': '本周皮肤健康分析报告',
@@ -201,8 +236,8 @@ def generate_test_data():
         
         db.session.commit()
         
-        # 5. 创建通知
-        print("\n【步骤5】创建通知...")
+        # 6. 创建通知
+        print("\n【步骤6】创建通知...")
         notifications = [
             {
                 'title': '设备在线提醒',
@@ -251,7 +286,7 @@ def generate_test_data():
         
         db.session.commit()
         
-        # 6. 统计信息
+        # 7. 统计信息
         print("\n" + "="*60)
         print("📊 数据生成完成统计")
         print("="*60)
