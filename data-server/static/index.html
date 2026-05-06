@@ -756,7 +756,13 @@
             const skinResult = await apiRequest('/data/skin?days=7&page=1&per_page=100');
             
             if (skinResult && skinResult.success) {
-                const items = skinResult.data.items || [];
+                // 兼容数组和对象两种格式
+                let items = [];
+                if (Array.isArray(skinResult.data)) {
+                    items = skinResult.data;
+                } else if (skinResult.data && typeof skinResult.data === 'object') {
+                    items = skinResult.data.items || [];
+                }
                 
                 // 按日期分组
                 const dateMap = {};
@@ -774,16 +780,16 @@
                 const labels = Object.keys(dateMap).sort();
                 const moistureData = labels.map(date => {
                     const values = dateMap[date].moisture;
-                    return (values.reduce((a, b) => a + b, 0) / values.length).toFixed(1);
+                    return values.length > 0 ? (values.reduce((a, b) => a + b, 0) / values.length).toFixed(1) : 0;
                 });
                 const oilinessData = labels.map(date => {
                     const values = dateMap[date].oiliness;
-                    return (values.reduce((a, b) => a + b, 0) / values.length).toFixed(1);
+                    return values.length > 0 ? (values.reduce((a, b) => a + b, 0) / values.length).toFixed(1) : 0;
                 });
                 
                 // 创建图表
                 const ctx = document.getElementById('dashboardChart');
-                if (ctx) {
+                if (ctx && labels.length > 0) {
                     new Chart(ctx, {
                         type: 'line',
                         data: {
@@ -1157,9 +1163,21 @@
             const result = await apiRequest(`/data/skin?days=${days}&page=${page}&per_page=${perPage}`);
             
             if (result && result.success) {
-                // 皮肤数据接口返回的是 data.items，pagination.total/pages
-                const items = result.data?.items || [];
-                const pagination = result.pagination || {};
+                // API返回格式：{success, data: [...], pagination: {...}}
+                // data可能是数组或对象
+                let items = [];
+                let pagination = {};
+                
+                if (Array.isArray(result.data)) {
+                    // data是数组
+                    items = result.data;
+                    pagination = result.pagination || { total: items.length, pages: 1 };
+                } else if (result.data && typeof result.data === 'object') {
+                    // data是对象，包含items
+                    items = result.data.items || [];
+                    pagination = result.pagination || result.data.pagination || {};
+                }
+                
                 const tbody = document.getElementById('skinDataTableBody');
                 
                 if (items.length === 0) {
@@ -1178,9 +1196,9 @@
                     <tr>
                         <td>${item.id}</td>
                         <td><code>${item.device_id}</code></td>
-                        <td>${item.moisture?.toFixed(1) || '-'}</td>
-                        <td>${item.oiliness?.toFixed(1) || '-'}</td>
-                        <td>${item.temperature?.toFixed(1) || '-'}</td>
+                        <td>${item.moisture?.toFixed ? item.moisture.toFixed(1) : item.moisture || '-'}</td>
+                        <td>${item.oiliness?.toFixed ? item.oiliness.toFixed(1) : item.oiliness || '-'}</td>
+                        <td>${item.temperature?.toFixed ? item.temperature.toFixed(1) : item.temperature || '-'}</td>
                         <td>${formatDateTime(item.sensor_time)}</td>
                         <td>${formatDateTime(item.received_at)}</td>
                     </tr>
