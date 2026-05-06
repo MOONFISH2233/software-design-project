@@ -127,11 +127,17 @@ def login():
             return jsonify({'success': False, 'message': '账户已被禁用'}), 403
         
         # 生成JWT token
-        token = jwt.encode({
+        token_bytes = jwt.encode({
             'user_id': user.id,
             'username': user.username,
             'exp': datetime.utcnow() + timedelta(days=7)
         }, JWT_SECRET_KEY, algorithm='HS256')
+        
+        # PyJWT 2.x返回bytes，需要解码为str
+        if isinstance(token_bytes, bytes):
+            token = token_bytes.decode('utf-8')
+        else:
+            token = token_bytes
         
         # 更新最后登录时间
         user.last_login = datetime.now()
