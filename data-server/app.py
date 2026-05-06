@@ -33,7 +33,7 @@ app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', secrets.token_hex(32))
 app.config['JWT_EXPIRATION_HOURS'] = 24
 
 # ==================== MySQL数据库配置 ====================
-app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://root:admin@localhost/sensor_project?charset=utf8mb4'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://root:admin@localhost/software_design?charset=utf8mb4'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
     'pool_size': 10,
@@ -888,15 +888,19 @@ except Exception as e:
 # ==================== 主程序入口 ====================
 
 if __name__ == '__main__':
-    # 打印启动信息
+    # ==================== 注册小程序API蓝图 ====================
+    try:
+        from routes.miniprogram_routes import miniprogram_bp
+        app.register_blueprint(miniprogram_bp)
+        print("✅ 小程序API蓝图已注册")
+    except Exception as e:
+        print(f"❌ 小程序API蓝图注册失败: {e}")
+    
     print("=" * 60)
-    print("Flask 数据服务器 v3.0 - 安全增强版")
+    print("🚀 智能皮肤健康监测系统 v2.0")
     print("=" * 60)
-    print(f"数据保存目录：{os.path.abspath(DATA_DIR)}")
-    print(f"日志目录：{os.path.abspath(LOG_DIR)}")
-    print(f"安全配置目录：{os.path.abspath(SECURITY_DIR)}")
-    print("=" * 60)
-    print("默认用户账户：")
+    print("服务地址: http://0.0.0.0:5000")
+    print("测试账号:")
     print("  - admin / admin123 (管理员)")
     print("  - user1 / user123 (普通用户)")
     print("  - user2 / user123 (普通用户)")
@@ -917,6 +921,12 @@ if __name__ == '__main__':
     print("  环境数据：/api/mysql/environment-data [GET]")
     print("  统计数据：/api/mysql/statistics [GET]")
     print("  用户管理：/api/mysql/users [GET]")
+    print("=" * 60)
+    print("小程序API 接口：")
+    print("  登录：POST /api/miniprogram/auth/login")
+    print("  设备列表：GET /api/miniprogram/device/list")
+    print("  统计数据：GET /api/miniprogram/data/statistics")
+    print("  通知列表：GET /api/miniprogram/notification/list")
     print("=" * 60)
     
     # 启动服务器
