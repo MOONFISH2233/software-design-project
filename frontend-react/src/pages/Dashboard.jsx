@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, AreaChart, Area } from 'recharts';
-import { Smartphone, Wifi, Droplets, Bell, LogOut, ChevronRight, Activity, TrendingUp, Calendar } from 'lucide-react';
+import { Smartphone, Wifi, Droplets, Bell, LogOut, ChevronRight, Activity, TrendingUp, Calendar, Wind, FileText, Users, User } from 'lucide-react';
 import api from '../api';
 import { useUserStore } from '../stores/userStore';
 import { useNavigate } from 'react-router-dom';
@@ -15,7 +15,6 @@ export default function Dashboard() {
   });
   const [chartData, setChartData] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('overview');
   const navigate = useNavigate();
   const logout = useUserStore((state) => state.logout);
   const user = useUserStore((state) => state.user);
@@ -83,19 +82,26 @@ export default function Dashboard() {
           </div>
           
           <div className="hidden md:flex items-center space-x-1">
-            {navItems.map((item) => (
-              <button
-                key={item.id}
-                onClick={() => setActiveTab(item.id)}
-                className={`px-4 py-2 rounded-lg transition-all flex items-center space-x-2 ${
-                  activeTab === item.id 
-                    ? 'bg-indigo-100 text-indigo-600' 
-                    : 'text-gray-600 hover:bg-gray-100'
-                }`}
+            {[
+              { label: '概览', path: '/', icon: Activity },
+              { label: '设备', path: '/devices', icon: Smartphone },
+              { label: '数据', path: '/skin-data', icon: Droplets },
+              { label: '环境', path: '/environment', icon: Wind },
+              { label: '报告', path: '/reports', icon: FileText },
+              { label: '通知', path: '/notifications', icon: Bell },
+              { label: '社区', path: '/community', icon: Users },
+              { label: '我的', path: '/profile', icon: User }
+            ].map((item) => (
+              <motion.button
+                key={item.path}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => navigate(item.path)}
+                className="px-4 py-2 rounded-lg transition-all flex items-center space-x-2 text-gray-600 hover:bg-gray-100 hover:text-indigo-600"
               >
                 <item.icon className="w-4 h-4" />
                 <span>{item.label}</span>
-              </button>
+              </motion.button>
             ))}
           </div>
 
@@ -115,7 +121,7 @@ export default function Dashboard() {
       </motion.nav>
 
       {/* 主内容区 */}
-      <main className="pt-24 pb-12 px-6 max-w-7xl mx-auto">
+      <main className="pt-28 pb-12 px-6 max-w-7xl mx-auto">
         {/* Hero区域 */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -128,13 +134,13 @@ export default function Dashboard() {
           <p className="text-xl text-gray-600">您的皮肤健康数据实时监测中</p>
         </motion.div>
 
-        {/* 统计卡片网格 */}
+        {/* 统计卡片网格 - 可点击跳转 */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
           {[
-            { title: '绑定设备', value: stats.deviceCount, icon: Smartphone, color: 'from-indigo-500 to-purple-600', trend: '+12%' },
-            { title: '在线设备', value: stats.onlineCount, icon: Wifi, color: 'from-emerald-500 to-teal-600', trend: '98%' },
-            { title: '数据记录', value: stats.dataCount, icon: Droplets, color: 'from-blue-500 to-cyan-600', trend: '今日' },
-            { title: '未读通知', value: stats.notificationCount, icon: Bell, color: 'from-amber-500 to-orange-600', trend: '新' }
+            { title: '绑定设备', value: stats.deviceCount, icon: Smartphone, color: 'from-indigo-500 to-purple-600', trend: '+12%', path: '/devices' },
+            { title: '在线设备', value: stats.onlineCount, icon: Wifi, color: 'from-emerald-500 to-teal-600', trend: '98%', path: '/devices' },
+            { title: '数据记录', value: stats.dataCount, icon: Droplets, color: 'from-blue-500 to-cyan-600', trend: '今日', path: '/skin-data' },
+            { title: '未读通知', value: stats.notificationCount, icon: Bell, color: 'from-amber-500 to-orange-600', trend: '新', path: '/notifications' }
           ].map((card, index) => (
             <motion.div
               key={card.title}
@@ -142,6 +148,7 @@ export default function Dashboard() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.1 }}
               whileHover={{ scale: 1.05, y: -8 }}
+              onClick={() => navigate(card.path)}
               className="bg-white/70 backdrop-blur-xl rounded-3xl p-8 shadow-xl border border-white/50 cursor-pointer group"
             >
               <div className="flex items-start justify-between mb-6">
