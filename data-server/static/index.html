@@ -1,0 +1,1323 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>皮肤健康监测系统</title>
+    
+    <!-- Bootstrap 5.3 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome 6.4 -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    
+    <style>
+        :root {
+            --primary-color: #4e73df;
+            --secondary-color: #858796;
+            --success-color: #1cc88a;
+            --info-color: #36b9cc;
+            --warning-color: #f6c23e;
+            --danger-color: #e74a3b;
+        }
+        
+        body {
+            font-family: 'Nunito', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: #f8f9fc;
+        }
+        
+        /* 登录页面样式 */
+        .login-container {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        
+        .login-card {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            padding: 40px;
+            width: 100%;
+            max-width: 450px;
+        }
+        
+        .login-logo {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .login-logo i {
+            font-size: 60px;
+            color: var(--primary-color);
+        }
+        
+        /* 主应用布局 */
+        .app-container {
+            display: none;
+            min-height: 100vh;
+        }
+        
+        .sidebar {
+            width: 250px;
+            background: linear-gradient(180deg, #4e73df 10%, #224abe 100%);
+            color: white;
+            position: fixed;
+            height: 100vh;
+            overflow-y: auto;
+            transition: all 0.3s;
+            z-index: 1000;
+        }
+        
+        .sidebar-brand {
+            padding: 20px;
+            text-align: center;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .sidebar-brand h4 {
+            margin: 0;
+            font-weight: 700;
+        }
+        
+        .nav-item {
+            padding: 15px 20px;
+            cursor: pointer;
+            transition: all 0.3s;
+            border-left: 3px solid transparent;
+        }
+        
+        .nav-item:hover, .nav-item.active {
+            background: rgba(255,255,255,0.1);
+            border-left-color: white;
+        }
+        
+        .nav-item i {
+            margin-right: 10px;
+            width: 20px;
+        }
+        
+        .main-content {
+            margin-left: 250px;
+            padding: 20px;
+            transition: all 0.3s;
+        }
+        
+        /* 卡片样式 */
+        .stat-card {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            border-left: 4px solid var(--primary-color);
+            transition: transform 0.3s;
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .stat-card.success {
+            border-left-color: var(--success-color);
+        }
+        
+        .stat-card.info {
+            border-left-color: var(--info-color);
+        }
+        
+        .stat-card.warning {
+            border-left-color: var(--warning-color);
+        }
+        
+        .stat-value {
+            font-size: 28px;
+            font-weight: 700;
+            color: #5a5c69;
+        }
+        
+        .stat-label {
+            font-size: 12px;
+            text-transform: uppercase;
+            color: var(--secondary-color);
+            margin-top: 5px;
+        }
+        
+        /* 表格样式 */
+        .data-table {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            overflow: hidden;
+        }
+        
+        .table thead th {
+            background: #f8f9fc;
+            border-bottom: 2px solid #e3e6f0;
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 12px;
+        }
+        
+        /* Loading遮罩 */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+        }
+        
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid var(--primary-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* Toast通知 */
+        .toast-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 9999;
+        }
+        
+        /* 响应式调整 */
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+            }
+            
+            .sidebar.show {
+                transform: translateX(0);
+            }
+            
+            .main-content {
+                margin-left: 0;
+            }
+        }
+        
+        /* 图表容器 */
+        .chart-container {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            margin-bottom: 20px;
+        }
+        
+        /* 按钮样式 */
+        .btn-primary {
+            background: var(--primary-color);
+            border-color: var(--primary-color);
+        }
+        
+        .btn-primary:hover {
+            background: #224abe;
+            border-color: #224abe;
+        }
+        
+        /* 徽章样式 */
+        .badge-online {
+            background: var(--success-color);
+        }
+        
+        .badge-offline {
+            background: var(--danger-color);
+        }
+    </style>
+</head>
+<body>
+    <!-- Loading遮罩 -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-spinner"></div>
+    </div>
+    
+    <!-- Toast通知容器 -->
+    <div class="toast-container" id="toastContainer"></div>
+    
+    <!-- 登录页面 -->
+    <div class="login-container" id="loginPage">
+        <div class="login-card">
+            <div class="login-logo">
+                <i class="fas fa-heartbeat"></i>
+                <h3 class="mt-3">皮肤健康监测系统</h3>
+                <p class="text-muted">Skin Health Monitoring System</p>
+            </div>
+            
+            <!-- 登录表单 -->
+            <div id="loginForm">
+                <div class="mb-3">
+                    <label class="form-label">用户名</label>
+                    <input type="text" class="form-control" id="loginUsername" placeholder="请输入用户名">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">密码</label>
+                    <input type="password" class="form-control" id="loginPassword" placeholder="请输入密码">
+                </div>
+                <button class="btn btn-primary w-100 mb-3" onclick="handleLogin()">
+                    <i class="fas fa-sign-in-alt me-2"></i>登录
+                </button>
+                <div class="text-center">
+                    <span class="text-muted">还没有账号？</span>
+                    <a href="#" onclick="showRegisterForm()" class="text-decoration-none">立即注册</a>
+                </div>
+            </div>
+            
+            <!-- 注册表单 -->
+            <div id="registerForm" style="display: none;">
+                <div class="mb-3">
+                    <label class="form-label">用户名</label>
+                    <input type="text" class="form-control" id="regUsername" placeholder="请输入用户名">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">密码</label>
+                    <input type="password" class="form-control" id="regPassword" placeholder="请输入密码（至少6位）">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">手机号</label>
+                    <input type="tel" class="form-control" id="regPhone" placeholder="请输入手机号">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">昵称（可选）</label>
+                    <input type="text" class="form-control" id="regNickname" placeholder="请输入昵称">
+                </div>
+                <button class="btn btn-success w-100 mb-3" onclick="handleRegister()">
+                    <i class="fas fa-user-plus me-2"></i>注册
+                </button>
+                <div class="text-center">
+                    <span class="text-muted">已有账号？</span>
+                    <a href="#" onclick="showLoginForm()" class="text-decoration-none">立即登录</a>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 主应用 -->
+    <div class="app-container" id="appContainer">
+        <!-- 侧边栏 -->
+        <div class="sidebar" id="sidebar">
+            <div class="sidebar-brand">
+                <i class="fas fa-heartbeat fa-2x mb-2"></i>
+                <h4>健康监测</h4>
+            </div>
+            
+            <div class="nav-item active" onclick="navigateTo('dashboard')">
+                <i class="fas fa-tachometer-alt"></i>
+                <span>仪表板</span>
+            </div>
+            <div class="nav-item" onclick="navigateTo('devices')">
+                <i class="fas fa-microchip"></i>
+                <span>设备管理</span>
+            </div>
+            <div class="nav-item" onclick="navigateTo('skinData')">
+                <i class="fas fa-tint"></i>
+                <span>皮肤数据</span>
+            </div>
+            <div class="nav-item" onclick="navigateTo('environmentData')">
+                <i class="fas fa-cloud-sun"></i>
+                <span>环境数据</span>
+            </div>
+            <div class="nav-item" onclick="navigateTo('statistics')">
+                <i class="fas fa-chart-line"></i>
+                <span>统计分析</span>
+            </div>
+            <div class="nav-item" onclick="navigateTo('reports')">
+                <i class="fas fa-file-medical"></i>
+                <span>健康报告</span>
+            </div>
+            <div class="nav-item" onclick="navigateTo('notifications')">
+                <i class="fas fa-bell"></i>
+                <span>通知中心</span>
+                <span class="badge bg-danger ms-2" id="notificationBadge" style="display: none;">0</span>
+            </div>
+            <div class="nav-item" onclick="handleLogout()">
+                <i class="fas fa-sign-out-alt"></i>
+                <span>退出登录</span>
+            </div>
+        </div>
+        
+        <!-- 主内容区 -->
+        <div class="main-content">
+            <!-- 顶部导航 -->
+            <nav class="navbar navbar-expand-lg navbar-light bg-white rounded shadow-sm mb-4">
+                <div class="container-fluid">
+                    <button class="btn btn-sm btn-outline-primary d-md-none" onclick="toggleSidebar()">
+                        <i class="fas fa-bars"></i>
+                    </button>
+                    <span class="navbar-text ms-auto">
+                        <i class="fas fa-user-circle me-2"></i>
+                        <span id="userName">用户</span>
+                    </span>
+                </div>
+            </nav>
+            
+            <!-- 页面内容 -->
+            <div id="pageContent">
+                <!-- 动态加载内容 -->
+            </div>
+        </div>
+    </div>
+    
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    
+    <script>
+        // ==================== 全局配置 ====================
+        const API_BASE_URL = 'http://47.103.108.47:5000/api/miniprogram';
+        let authToken = localStorage.getItem('authToken') || '';
+        let currentUser = null;
+        
+        // ==================== 工具函数 ====================
+        
+        // 显示Loading
+        function showLoading() {
+            document.getElementById('loadingOverlay').style.display = 'flex';
+        }
+        
+        // 隐藏Loading
+        function hideLoading() {
+            document.getElementById('loadingOverlay').style.display = 'none';
+        }
+        
+        // 显示Toast通知
+        function showToast(message, type = 'info') {
+            const toastContainer = document.getElementById('toastContainer');
+            const toastId = 'toast-' + Date.now();
+            
+            const bgClass = {
+                'success': 'bg-success',
+                'error': 'bg-danger',
+                'warning': 'bg-warning',
+                'info': 'bg-info'
+            }[type] || 'bg-info';
+            
+            const iconClass = {
+                'success': 'fa-check-circle',
+                'error': 'fa-exclamation-circle',
+                'warning': 'fa-exclamation-triangle',
+                'info': 'fa-info-circle'
+            }[type] || 'fa-info-circle';
+            
+            const toastHTML = `
+                <div id="${toastId}" class="toast align-items-center text-white ${bgClass} border-0" role="alert">
+                    <div class="d-flex">
+                        <div class="toast-body">
+                            <i class="fas ${iconClass} me-2"></i>${message}
+                        </div>
+                        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+                    </div>
+                </div>
+            `;
+            
+            toastContainer.insertAdjacentHTML('beforeend', toastHTML);
+            const toastElement = document.getElementById(toastId);
+            const toast = new bootstrap.Toast(toastElement, { delay: 3000 });
+            toast.show();
+            
+            // 自动移除
+            setTimeout(() => {
+                toastElement.remove();
+            }, 3500);
+        }
+        
+        // API请求封装
+        async function apiRequest(endpoint, options = {}) {
+            const url = `${API_BASE_URL}${endpoint}`;
+            const headers = {
+                'Content-Type': 'application/json',
+                ...options.headers
+            };
+            
+            // 添加认证Token
+            if (authToken) {
+                headers['Authorization'] = `Bearer ${authToken}`;
+            }
+            
+            try {
+                showLoading();
+                const response = await fetch(url, {
+                    ...options,
+                    headers
+                });
+                
+                const data = await response.json();
+                
+                // 处理401未授权
+                if (response.status === 401) {
+                    handleLogout();
+                    showToast('登录已过期，请重新登录', 'warning');
+                    return null;
+                }
+                
+                hideLoading();
+                return data;
+            } catch (error) {
+                hideLoading();
+                showToast(`网络错误: ${error.message}`, 'error');
+                console.error('API请求失败:', error);
+                return null;
+            }
+        }
+        
+        // ==================== 认证模块 ====================
+        
+        // 显示登录表单
+        function showLoginForm() {
+            document.getElementById('loginForm').style.display = 'block';
+            document.getElementById('registerForm').style.display = 'none';
+        }
+        
+        // 显示注册表单
+        function showRegisterForm() {
+            document.getElementById('loginForm').style.display = 'none';
+            document.getElementById('registerForm').style.display = 'block';
+        }
+        
+        // 处理登录
+        async function handleLogin() {
+            const username = document.getElementById('loginUsername').value.trim();
+            const password = document.getElementById('loginPassword').value.trim();
+            
+            if (!username || !password) {
+                showToast('请输入用户名和密码', 'warning');
+                return;
+            }
+            
+            const result = await apiRequest('/user/login', {
+                method: 'POST',
+                body: JSON.stringify({ username, password })
+            });
+            
+            if (result && result.success) {
+                // API直接返回token和user，不在data字段中
+                authToken = result.token;
+                currentUser = result.user;
+                localStorage.setItem('authToken', authToken);
+                localStorage.setItem('currentUser', JSON.stringify(currentUser));
+                
+                showToast('登录成功！', 'success');
+                showApp();
+            } else {
+                showToast(result?.message || '登录失败', 'error');
+            }
+        }
+        
+        // 处理注册
+        async function handleRegister() {
+            const username = document.getElementById('regUsername').value.trim();
+            const password = document.getElementById('regPassword').value.trim();
+            const phone = document.getElementById('regPhone').value.trim();
+            const nickname = document.getElementById('regNickname').value.trim();
+            
+            if (!username || !password || !phone) {
+                showToast('请填写必填字段', 'warning');
+                return;
+            }
+            
+            if (password.length < 6) {
+                showToast('密码长度至少6位', 'warning');
+                return;
+            }
+            
+            const result = await apiRequest('/user/register', {
+                method: 'POST',
+                body: JSON.stringify({ username, password, phone, nickname })
+            });
+            
+            if (result && result.success) {
+                showToast('注册成功！请登录', 'success');
+                showLoginForm();
+                // 清空表单
+                document.getElementById('regUsername').value = '';
+                document.getElementById('regPassword').value = '';
+                document.getElementById('regPhone').value = '';
+                document.getElementById('regNickname').value = '';
+            } else {
+                showToast(result?.message || '注册失败', 'error');
+            }
+        }
+        
+        // 处理登出
+        function handleLogout() {
+            authToken = '';
+            currentUser = null;
+            localStorage.removeItem('authToken');
+            localStorage.removeItem('currentUser');
+            
+            document.getElementById('loginPage').style.display = 'flex';
+            document.getElementById('appContainer').style.display = 'none';
+            
+            // 清空登录表单
+            document.getElementById('loginUsername').value = '';
+            document.getElementById('loginPassword').value = '';
+            
+            showToast('已退出登录', 'info');
+        }
+        
+        // 显示主应用
+        function showApp() {
+            document.getElementById('loginPage').style.display = 'none';
+            document.getElementById('appContainer').style.display = 'block';
+            
+            // 更新用户信息
+            if (currentUser) {
+                document.getElementById('userName').textContent = currentUser.nickname || currentUser.username;
+            }
+            
+            // 默认跳转到仪表板
+            navigateTo('dashboard');
+        }
+        
+        // ==================== 页面导航 ====================
+        
+        // 切换侧边栏（移动端）
+        function toggleSidebar() {
+            document.getElementById('sidebar').classList.toggle('show');
+        }
+        
+        // 导航到指定页面
+        function navigateTo(page) {
+            // 更新导航激活状态
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            event.target.closest('.nav-item')?.classList.add('active');
+            
+            // 加载对应页面
+            switch(page) {
+                case 'dashboard':
+                    loadDashboard();
+                    break;
+                case 'devices':
+                    loadDevices();
+                    break;
+                case 'skinData':
+                    loadSkinData();
+                    break;
+                case 'environmentData':
+                    loadEnvironmentData();
+                    break;
+                case 'statistics':
+                    loadStatistics();
+                    break;
+                case 'reports':
+                    loadReports();
+                    break;
+                case 'notifications':
+                    loadNotifications();
+                    break;
+            }
+            
+            // 移动端关闭侧边栏
+            if (window.innerWidth <= 768) {
+                document.getElementById('sidebar').classList.remove('show');
+            }
+        }
+        
+        // ==================== 页面加载函数 ====================
+        
+        // 加载仪表板
+        async function loadDashboard() {
+            const content = `
+                <h2 class="mb-4"><i class="fas fa-tachometer-alt me-2"></i>仪表板</h2>
+                
+                <!-- 统计卡片 -->
+                <div class="row mb-4">
+                    <div class="col-xl-3 col-md-6 mb-4">
+                        <div class="stat-card">
+                            <div class="stat-value" id="deviceCount">-</div>
+                            <div class="stat-label">绑定设备</div>
+                        </div>
+                    </div>
+                    <div class="col-xl-3 col-md-6 mb-4">
+                        <div class="stat-card success">
+                            <div class="stat-value" id="onlineCount">-</div>
+                            <div class="stat-label">在线设备</div>
+                        </div>
+                    </div>
+                    <div class="col-xl-3 col-md-6 mb-4">
+                        <div class="stat-card info">
+                            <div class="stat-value" id="todayRecords">-</div>
+                            <div class="stat-label">今日数据</div>
+                        </div>
+                    </div>
+                    <div class="col-xl-3 col-md-6 mb-4">
+                        <div class="stat-card warning">
+                            <div class="stat-value" id="unreadNotifications">-</div>
+                            <div class="stat-label">未读通知</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 快捷操作 -->
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="mb-0"><i class="fas fa-bolt me-2"></i>快捷操作</h5>
+                            </div>
+                            <div class="card-body">
+                                <button class="btn btn-primary me-2 mb-2" onclick="navigateTo('devices')">
+                                    <i class="fas fa-plus me-2"></i>绑定设备
+                                </button>
+                                <button class="btn btn-success me-2 mb-2" onclick="navigateTo('skinData')">
+                                    <i class="fas fa-chart-bar me-2"></i>查看数据
+                                </button>
+                                <button class="btn btn-info me-2 mb-2" onclick="navigateTo('reports')">
+                                    <i class="fas fa-file-medical me-2"></i>健康报告
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 最近数据图表 -->
+                <div class="row">
+                    <div class="col-lg-8 mb-4">
+                        <div class="chart-container">
+                            <h5 class="mb-3"><i class="fas fa-chart-line me-2"></i>最近7天皮肤数据趋势</h5>
+                            <canvas id="dashboardChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="col-lg-4 mb-4">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="mb-0"><i class="fas fa-clock me-2"></i>最新动态</h5>
+                            </div>
+                            <div class="card-body" id="recentActivity">
+                                <p class="text-muted">加载中...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            document.getElementById('pageContent').innerHTML = content;
+            
+            // 加载统计数据
+            loadDashboardStats();
+        }
+        
+        // 加载仪表板统计数据
+        async function loadDashboardStats() {
+            // 获取设备列表
+            const devicesResult = await apiRequest('/device/list?page=1&per_page=100');
+            if (devicesResult && devicesResult.success) {
+                const devices = devicesResult.data.items || [];
+                document.getElementById('deviceCount').textContent = devices.length;
+                
+                const onlineDevices = devices.filter(d => d.status === 'online');
+                document.getElementById('onlineCount').textContent = onlineDevices.length;
+            }
+            
+            // 获取未读通知
+            const notifResult = await apiRequest('/notification/list?is_read=false&page=1&per_page=1');
+            if (notifResult && notifResult.success) {
+                // 通知接口返回的是 notifications 数组和 pagination 对象
+                const notifications = notifResult.notifications || [];
+                const pagination = notifResult.pagination || {};
+                document.getElementById('unreadNotifications').textContent = pagination.total || 0;
+                
+                // 更新侧边栏徽章
+                const badge = document.getElementById('notificationBadge');
+                if (pagination.total > 0) {
+                    badge.textContent = pagination.total;
+                    badge.style.display = 'inline';
+                } else {
+                    badge.style.display = 'none';
+                }
+            }
+            
+            // 今日数据记录数（模拟）
+            document.getElementById('todayRecords').textContent = '-';
+            
+            // 加载图表数据
+            loadDashboardChart();
+        }
+        
+        // 加载仪表板图表
+        async function loadDashboardChart() {
+            const skinResult = await apiRequest('/data/skin?days=7&page=1&per_page=100');
+            
+            if (skinResult && skinResult.success) {
+                const items = skinResult.data.items || [];
+                
+                // 按日期分组
+                const dateMap = {};
+                items.forEach(item => {
+                    const date = item.sensor_time?.substring(0, 10);
+                    if (date) {
+                        if (!dateMap[date]) {
+                            dateMap[date] = { moisture: [], oiliness: [] };
+                        }
+                        dateMap[date].moisture.push(item.moisture);
+                        dateMap[date].oiliness.push(item.oiliness);
+                    }
+                });
+                
+                const labels = Object.keys(dateMap).sort();
+                const moistureData = labels.map(date => {
+                    const values = dateMap[date].moisture;
+                    return (values.reduce((a, b) => a + b, 0) / values.length).toFixed(1);
+                });
+                const oilinessData = labels.map(date => {
+                    const values = dateMap[date].oiliness;
+                    return (values.reduce((a, b) => a + b, 0) / values.length).toFixed(1);
+                });
+                
+                // 创建图表
+                const ctx = document.getElementById('dashboardChart');
+                if (ctx) {
+                    new Chart(ctx, {
+                        type: 'line',
+                        data: {
+                            labels: labels,
+                            datasets: [{
+                                label: '平均水分',
+                                data: moistureData,
+                                borderColor: '#4e73df',
+                                backgroundColor: 'rgba(78, 115, 223, 0.1)',
+                                tension: 0.4
+                            }, {
+                                label: '平均油性',
+                                data: oilinessData,
+                                borderColor: '#1cc88a',
+                                backgroundColor: 'rgba(28, 200, 138, 0.1)',
+                                tension: 0.4
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            plugins: {
+                                legend: {
+                                    position: 'top'
+                                }
+                            },
+                            scales: {
+                                y: {
+                                    beginAtZero: false
+                                }
+                            }
+                        }
+                    });
+                }
+            }
+        }
+        
+        // 加载设备列表
+        async function loadDevices() {
+            const content = `
+                <h2 class="mb-4"><i class="fas fa-microchip me-2"></i>设备管理</h2>
+                
+                <div class="card mb-4">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">我的设备</h5>
+                        <button class="btn btn-primary btn-sm" onclick="showBindDeviceModal()">
+                            <i class="fas fa-plus me-2"></i>绑定设备
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>设备ID</th>
+                                        <th>设备名称</th>
+                                        <th>类型</th>
+                                        <th>状态</th>
+                                        <th>电量</th>
+                                        <th>信号强度</th>
+                                        <th>位置</th>
+                                        <th>最后心跳</th>
+                                        <th>操作</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="deviceTableBody">
+                                    <tr>
+                                        <td colspan="9" class="text-center">
+                                            <div class="spinner-border text-primary" role="status">
+                                                <span class="visually-hidden">加载中...</span>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            document.getElementById('pageContent').innerHTML = content;
+            
+            // 加载设备数据
+            loadDeviceList();
+        }
+        
+        // 加载设备列表数据
+        async function loadDeviceList() {
+            const result = await apiRequest('/device/list?page=1&per_page=50');
+            
+            if (result && result.success) {
+                // 设备列表接口返回的是 devices 字段，不是 data.items
+                const devices = result.devices || [];
+                const tbody = document.getElementById('deviceTableBody');
+                
+                if (devices.length === 0) {
+                    tbody.innerHTML = `
+                        <tr>
+                            <td colspan="9" class="text-center text-muted py-4">
+                                <i class="fas fa-inbox fa-3x mb-3"></i>
+                                <p>暂无设备，请点击"绑定设备"添加</p>
+                            </td>
+                        </tr>
+                    `;
+                    return;
+                }
+                
+                tbody.innerHTML = devices.map(device => `
+                    <tr>
+                        <td><code>${device.device_id}</code></td>
+                        <td>${device.device_name || '-'}</td>
+                        <td>${device.device_type || '-'}</td>
+                        <td>
+                            <span class="badge ${device.status === 'online' ? 'badge-online' : 'badge-offline'}">
+                                ${device.status === 'online' ? '在线' : '离线'}
+                            </span>
+                        </td>
+                        <td>
+                            ${device.battery_level ? device.battery_level + '%' : '-'}
+                        </td>
+                        <td>
+                            ${device.signal_strength ? device.signal_strength + ' dBm' : '-'}
+                        </td>
+                        <td>${device.location || '-'}</td>
+                        <td>${formatDateTime(device.last_heartbeat)}</td>
+                        <td>
+                            <button class="btn btn-sm btn-info" onclick="viewDeviceStatus('${device.device_id}')">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `).join('');
+            } else {
+                document.getElementById('deviceTableBody').innerHTML = `
+                    <tr>
+                        <td colspan="9" class="text-center text-danger">
+                            加载失败：${result?.message || '未知错误'}
+                        </td>
+                    </tr>
+                `;
+            }
+        }
+        
+        // 显示绑定设备模态框
+        function showBindDeviceModal() {
+            const modalHTML = `
+                <div class="modal fade" id="bindDeviceModal" tabindex="-1">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title">绑定新设备</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                            </div>
+                            <div class="modal-body">
+                                <div class="mb-3">
+                                    <label class="form-label">设备ID *</label>
+                                    <input type="text" class="form-control" id="bindDeviceId" placeholder="例如: DEV_001">
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">设备名称</label>
+                                    <input type="text" class="form-control" id="bindDeviceName" placeholder="例如: 我的皮肤检测仪">
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">使用位置</label>
+                                    <input type="text" class="form-control" id="bindLocation" placeholder="例如: 家中">
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                                <button type="button" class="btn btn-primary" onclick="submitBindDevice()">确认绑定</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            document.body.insertAdjacentHTML('beforeend', modalHTML);
+            const modal = new bootstrap.Modal(document.getElementById('bindDeviceModal'));
+            modal.show();
+            
+            // 模态框关闭时移除DOM
+            document.getElementById('bindDeviceModal').addEventListener('hidden.bs.modal', function () {
+                this.remove();
+            });
+        }
+        
+        // 提交绑定设备
+        async function submitBindDevice() {
+            const device_id = document.getElementById('bindDeviceId').value.trim();
+            const device_name = document.getElementById('bindDeviceName').value.trim();
+            const location = document.getElementById('bindLocation').value.trim();
+            
+            if (!device_id) {
+                showToast('请输入设备ID', 'warning');
+                return;
+            }
+            
+            const result = await apiRequest('/device/bind', {
+                method: 'POST',
+                body: JSON.stringify({ device_id, device_name, location })
+            });
+            
+            if (result && result.success) {
+                showToast('设备绑定成功！', 'success');
+                bootstrap.Modal.getInstance(document.getElementById('bindDeviceModal')).hide();
+                loadDeviceList(); // 刷新列表
+            } else {
+                showToast(result?.message || '绑定失败', 'error');
+            }
+        }
+        
+        // 查看设备状态
+        async function viewDeviceStatus(deviceId) {
+            showLoading();
+            const result = await apiRequest(`/device/status/${deviceId}`);
+            hideLoading();
+            
+            if (result && result.success) {
+                const device = result.data;
+                const statusHTML = `
+                    <div class="modal fade" id="deviceStatusModal" tabindex="-1">
+                        <div class="modal-dialog">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title">设备状态详情</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <table class="table">
+                                        <tr>
+                                            <th width="40%">设备ID</th>
+                                            <td><code>${device.device_id}</code></td>
+                                        </tr>
+                                        <tr>
+                                            <th>设备名称</th>
+                                            <td>${device.device_name || '-'}</td>
+                                        </tr>
+                                        <tr>
+                                            <th>状态</th>
+                                            <td>
+                                                <span class="badge ${device.status === 'online' ? 'badge-online' : 'badge-offline'}">
+                                                    ${device.status === 'online' ? '在线' : '离线'}
+                                                </span>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <th>电量</th>
+                                            <td>${device.battery_level ? device.battery_level + '%' : '-'}</td>
+                                        </tr>
+                                        <tr>
+                                            <th>信号强度</th>
+                                            <td>${device.signal_strength ? device.signal_strength + ' dBm' : '-'}</td>
+                                        </tr>
+                                        <tr>
+                                            <th>固件版本</th>
+                                            <td>${device.firmware_version || '-'}</td>
+                                        </tr>
+                                        <tr>
+                                            <th>安装日期</th>
+                                            <td>${formatDate(device.install_date)}</td>
+                                        </tr>
+                                        <tr>
+                                            <th>最后心跳</th>
+                                            <td>${formatDateTime(device.last_heartbeat)}</td>
+                                        </tr>
+                                        <tr>
+                                            <th>位置</th>
+                                            <td>${device.location || '-'}</td>
+                                        </tr>
+                                    </table>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                document.body.insertAdjacentHTML('beforeend', statusHTML);
+                const modal = new bootstrap.Modal(document.getElementById('deviceStatusModal'));
+                modal.show();
+                
+                document.getElementById('deviceStatusModal').addEventListener('hidden.bs.modal', function () {
+                    this.remove();
+                });
+            } else {
+                showToast(result?.message || '查询失败', 'error');
+            }
+        }
+        
+        // 加载皮肤数据
+        async function loadSkinData() {
+            const content = `
+                <h2 class="mb-4"><i class="fas fa-tint me-2"></i>皮肤数据</h2>
+                
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">查询条件</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-3 mb-3">
+                                <label class="form-label">时间范围</label>
+                                <select class="form-select" id="skinTimeRange" onchange="loadSkinDataTable()">
+                                    <option value="7">最近7天</option>
+                                    <option value="30">最近30天</option>
+                                    <option value="90">最近90天</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <label class="form-label">每页数量</label>
+                                <select class="form-select" id="skinPerPage" onchange="loadSkinDataTable()">
+                                    <option value="10">10条</option>
+                                    <option value="20" selected>20条</option>
+                                    <option value="50">50条</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6 mb-3 d-flex align-items-end">
+                                <button class="btn btn-primary me-2" onclick="loadSkinDataTable()">
+                                    <i class="fas fa-search me-2"></i>查询
+                                </button>
+                                <button class="btn btn-success" onclick="exportSkinData()">
+                                    <i class="fas fa-download me-2"></i>导出
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="data-table">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>设备ID</th>
+                                    <th>水分</th>
+                                    <th>油性</th>
+                                    <th>温度</th>
+                                    <th>检测时间</th>
+                                    <th>接收时间</th>
+                                </tr>
+                            </thead>
+                            <tbody id="skinDataTableBody">
+                                <tr>
+                                    <td colspan="7" class="text-center">
+                                        <div class="spinner-border text-primary" role="status">
+                                            <span class="visually-hidden">加载中...</span>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <nav class="mt-3">
+                    <ul class="pagination justify-content-center" id="skinPagination"></ul>
+                </nav>
+            `;
+            
+            document.getElementById('pageContent').innerHTML = content;
+            loadSkinDataTable(1);
+        }
+        
+        // 加载皮肤数据表格
+        async function loadSkinDataTable(page = 1) {
+            const days = document.getElementById('skinTimeRange')?.value || 7;
+            const perPage = document.getElementById('skinPerPage')?.value || 20;
+            
+            const result = await apiRequest(`/data/skin?days=${days}&page=${page}&per_page=${perPage}`);
+            
+            if (result && result.success) {
+                // 皮肤数据接口返回的是 data.items，pagination.total/pages
+                const items = result.data?.items || [];
+                const pagination = result.pagination || {};
+                const tbody = document.getElementById('skinDataTableBody');
+                
+                if (items.length === 0) {
+                    tbody.innerHTML = `
+                        <tr>
+                            <td colspan="7" class="text-center text-muted py-4">
+                                <i class="fas fa-inbox fa-3x mb-3"></i>
+                                <p>暂无数据</p>
+                            </td>
+                        </tr>
+                    `;
+                    return;
+                }
+                
+                tbody.innerHTML = items.map(item => `
+                    <tr>
+                        <td>${item.id}</td>
+                        <td><code>${item.device_id}</code></td>
+                        <td>${item.moisture?.toFixed(1) || '-'}</td>
+                        <td>${item.oiliness?.toFixed(1) || '-'}</td>
+                        <td>${item.temperature?.toFixed(1) || '-'}</td>
+                        <td>${formatDateTime(item.sensor_time)}</td>
+                        <td>${formatDateTime(item.received_at)}</td>
+                    </tr>
+                `).join('');
+                
+                // 更新分页
+                updatePagination('skinPagination', page, pagination.pages || 1, loadSkinDataTable);
+            } else {
+                document.getElementById('skinDataTableBody').innerHTML = `
+                    <tr>
+                        <td colspan="7" class="text-center text-danger">
+                            加载失败：${result?.message || '未知错误'}
+                        </td>
+                    </tr>
+                `;
+            }
+        }
+        
+        // 加载环境数据（类似皮肤数据，略）
+        async function loadEnvironmentData() {
+            const content = `
+                <h2 class="mb-4"><i class="fas fa-cloud-sun me-2"></i>环境数据</h2>
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle me-2"></i>功能开发中...
+                </div>
+            `;
+            document.getElementById('pageContent').innerHTML = content;
+        }
+        
+        // 加载统计数据
+        async function loadStatistics() {
+            const content = `
+                <h2 class="mb-4"><i class="fas fa-chart-line me-2"></i>统计分析</h2>
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle me-2"></i>功能开发中...
+                </div>
+            `;
+            document.getElementById('pageContent').innerHTML = content;
+        }
+        
+        // 加载健康报告
+        async function loadReports() {
+            const content = `
+                <h2 class="mb-4"><i class="fas fa-file-medical me-2"></i>健康报告</h2>
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle me-2"></i>功能开发中...
+                </div>
+            `;
+            document.getElementById('pageContent').innerHTML = content;
+        }
+        
+        // 加载通知
+        async function loadNotifications() {
+            const content = `
+                <h2 class="mb-4"><i class="fas fa-bell me-2"></i>通知中心</h2>
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle me-2"></i>功能开发中...
+                </div>
+            `;
+            document.getElementById('pageContent').innerHTML = content;
+        }
+        
+        // ==================== 辅助函数 ====================
+        
+        // 格式化日期时间
+        function formatDateTime(datetime) {
+            if (!datetime) return '-';
+            return datetime.replace('T', ' ').substring(0, 19);
+        }
+        
+        // 格式化日期
+        function formatDate(date) {
+            if (!date) return '-';
+            return date.substring(0, 10);
+        }
+        
+        // 更新分页
+        function updatePagination(paginationId, currentPage, totalPages, callback) {
+            const pagination = document.getElementById(paginationId);
+            if (!pagination) return;
+            
+            let html = '';
+            
+            // 上一页
+            html += `
+                <li class="page-item ${currentPage === 1 ? 'disabled' : ''}">
+                    <a class="page-link" href="#" onclick="${callback.name}(${currentPage - 1}); return false;">
+                        <i class="fas fa-chevron-left"></i>
+                    </a>
+                </li>
+            `;
+            
+            // 页码
+            for (let i = 1; i <= totalPages; i++) {
+                if (i === 1 || i === totalPages || (i >= currentPage - 2 && i <= currentPage + 2)) {
+                    html += `
+                        <li class="page-item ${i === currentPage ? 'active' : ''}">
+                            <a class="page-link" href="#" onclick="${callback.name}(${i}); return false;">${i}</a>
+                        </li>
+                    `;
+                } else if (i === currentPage - 3 || i === currentPage + 3) {
+                    html += '<li class="page-item disabled"><span class="page-link">...</span></li>';
+                }
+            }
+            
+            // 下一页
+            html += `
+                <li class="page-item ${currentPage === totalPages ? 'disabled' : ''}">
+                    <a class="page-link" href="#" onclick="${callback.name}(${currentPage + 1}); return false;">
+                        <i class="fas fa-chevron-right"></i>
+                    </a>
+                </li>
+            `;
+            
+            pagination.innerHTML = html;
+        }
+        
+        // 导出皮肤数据
+        function exportSkinData() {
+            showToast('导出功能开发中...', 'info');
+        }
+        
+        // ==================== 初始化 ====================
+        
+        // 页面加载完成后执行
+        window.addEventListener('DOMContentLoaded', function() {
+            // 检查是否已登录
+            if (authToken) {
+                const savedUser = localStorage.getItem('currentUser');
+                if (savedUser) {
+                    currentUser = JSON.parse(savedUser);
+                    showApp();
+                } else {
+                    handleLogout();
+                }
+            }
+        });
+    </script>
+</body>
+</html>
