@@ -422,7 +422,6 @@ def get_statistics(current_user):
     try:
         start_date = request.args.get('start_date')
         end_date = request.args.get('end_date')
-        days = request.args.get('days', type=int)  # 支持days参数
         
         query = DailyStatistics.query
         
@@ -431,12 +430,6 @@ def get_statistics(current_user):
         
         if end_date:
             query = query.filter(DailyStatistics.stat_date <= datetime.fromisoformat(end_date).date())
-        
-        # 如果指定了days，计算起始日期
-        if days and not start_date:
-            from datetime import timedelta
-            start = (datetime.now() - timedelta(days=days)).date()
-            query = query.filter(DailyStatistics.stat_date >= start)
         
         # 按日期倒序排列
         query = query.order_by(DailyStatistics.stat_date.desc())
