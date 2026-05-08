@@ -36,9 +36,11 @@ app.config['JWT_EXPIRATION_HOURS'] = 24
 app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://root:admin@localhost/software_design?charset=utf8mb4'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
-    'pool_size': 10,
-    'pool_recycle': 3600,
-    'pool_pre_ping': True
+    'pool_size': 20,              # 增加到20（支持4个worker × 5连接）
+    'max_overflow': 10,           # 最大溢出连接数
+    'pool_recycle': 3600,         # 连接回收时间（秒）
+    'pool_pre_ping': True,        # 使用前检查连接有效性
+    'pool_timeout': 30            # 获取连接超时时间
 }
 
 # 初始化数据库
