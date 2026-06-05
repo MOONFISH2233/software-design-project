@@ -33,6 +33,25 @@ CORS(app)  # 启用CORS支持，允许跨域请求
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', secrets.token_hex(32))
 app.config['JWT_EXPIRATION_HOURS'] = 24
 
+# ==================== MySQL数据库配置 ====================
+app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://root:admin@localhost/software_design?charset=utf8mb4'
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
+    'pool_size': 5,
+    'max_overflow': 5,
+    'pool_recycle': 300,
+    'pool_pre_ping': True,
+    'pool_timeout': 30
+}
+
+# 初始化 models.py 中共享的 SQLAlchemy 实例，供小程序/后台路由使用。
+try:
+    from models import db as models_db
+    models_db.init_app(app)
+    print("✅ MySQL数据库扩展初始化成功")
+except Exception as e:
+    print(f"⚠️  MySQL数据库扩展初始化失败: {e}")
+
 # 初始化认证
 auth = HTTPTokenAuth(scheme='Bearer')
 limiter = Limiter(
@@ -872,6 +891,21 @@ def get_stats():
 
 
 # ==================== 主程序入口 ====================
+
+# ==================== 后台与小程序路由注册 ====================
+try:
+    from routes.miniprogram_routes import init_app as init_miniprogram
+    init_miniprogram(app)
+    print("✅ 小程序和后台路由注册成功")
+except Exception as e:
+    print(f"⚠️  小程序和后台路由注册失败: {e}")
+
+try:
+    from routes.mysql_routes import mysql_bp
+    app.register_blueprint(mysql_bp)
+    print("✅ MySQL CRUD路由注册成功")
+except Exception as e:
+    print(f"⚠️  MySQL CRUD路由注册失败: {e}")
 
 if __name__ == '__main__':
     # 打印启动信息
