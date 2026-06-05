@@ -2175,11 +2175,48 @@ def ensure_role_demo_dataset(scenario=None):
                 db.session.add(profile)
                 profiles_by_user[user.id] = profile
             else:
+                # 2026-06-05: 只有手动标记的 profile 才保留地址，否则才重置
+                existing_goals = {}
+                if profile.skincare_goals:
+                    try:
+                        if isinstance(profile.skincare_goals, str):
+                            existing_goals = json.loads(profile.skincare_goals)
+                        elif isinstance(profile.skincare_goals, dict):
+                            existing_goals = profile.skincare_goals
+                    except Exception:
+                        existing_goals = {}
+                # 如果用户数据被标记为 manual_update 或者已有真实省/市，保留地址
+                if existing_goals.get('data_source') == 'manual_update' or (existing_goals.get('province') and not existing_goals.get('province', '').startswith('未分配')):
+                    # 保留用户已设置的 province/city，但更新其他字段
+                    if existing_goals.get('province'):
+                        goals['province'] = existing_goals['province']
+                    if existing_goals.get('city'):
+                        goals['city'] = existing_goals['city']
                 profile.skincare_goals = goals
                 profile.age = profile.age or (19 + ((index * 3 + slot * 5) % 35))
                 profile.gender = profile.gender or ('女' if (index + slot) % 3 else '男')
                 profile.skin_type = profile.skin_type or ['混合性', '干性', '油性', '敏感性'][(index + slot) % 4]
                 profile.last_update = now
+
+                # 2026-06-05: 同步设备 location 与用户省份
+                # device_bindings 表中 device_id 是 varchar（如 'DEV_001'），不是 int
+                try:
+                    user_province = goals.get('province', '')
+                    user_city = goals.get('city', '')
+                    if user_province and user_province != '未分配':
+                        new_loc = f"{user_province}-{user_city}-设备点位"
+                        user_bindings = DeviceBinding.query.filter_by(user_id=user.id).all()
+                        for b in user_bindings:
+                            d = Device.query.filter_by(device_id=b.device_id).first()
+                            if d:
+                                current_loc = d.location or ''
+                                is_broken = current_loc in ('??', '???', '????', '?????', '??????', '----', '--', '')
+                                current_province = current_loc.split('-')[0] if current_loc and not is_broken else ''
+                                if is_broken or (current_province and current_province != user_province):
+                                    d.location = new_loc
+                                    d.updated_at = now
+                except Exception as sync_err:
+                    print(f"Warning: device location sync failed: {sync_err}")
 
             skin_device_id = f"SKP{index:02d}{slot}"
             skin_device = devices_by_id.get(skin_device_id) or upsert_demo_device(skin_device_id, 'skin', info, slot, now)
