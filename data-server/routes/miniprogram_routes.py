@@ -2734,12 +2734,12 @@ def device_region_meta(device, user=None, profile=None):
         normalized = location.replace('－', '-').replace('—', '-').replace(' ', '-')
         parts = [part for part in normalized.split('-') if part]
         location_province = parts[0] if parts else None
-        if meta and location_province and location_province != meta['province']:
-            prefer_profile_location = True
+        # 2026-06-05: 不再用 user profile 覆盖设备位置
+        # prefer_profile_location 永远保持 False，数据库的 location 优先
         if parts:
-            province = province or parts[0]
+            province = parts[0]  # 永远以设备 location 为准
         if len(parts) > 1:
-            city = city or parts[1]
+            city = parts[1]
 
     if not province:
         province = '未分配地区'
