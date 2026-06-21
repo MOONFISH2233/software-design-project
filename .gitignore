@@ -43,6 +43,7 @@ data-server/logs/*.log
 # OS
 .DS_Store
 Thumbs.db
+nul
 
 # Temporary files
 *.tmp
