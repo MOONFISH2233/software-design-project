@@ -1,0 +1,1410 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>智能皮肤健康监测系统 - 管理端</title>
+    
+    <!-- Bootstrap 5.3 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome 6.4 -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    
+    <style>
+        :root {
+            --primary-color: #1e3a5f;
+            --primary-light: #2d4a70;
+            --secondary-color: #00d4ff;
+            --accent-color: #ff6b6b;
+            --success-color: #10b981;
+            --warning-color: #f59e0b;
+            --danger-color: #ef4444;
+            --dark-bg: #0f172a;
+            --sidebar-bg: #1e293b;
+            --card-bg: #1e293b;
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--dark-bg);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        
+        /* 登录页面 */
+        .login-container {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #1e3a5f 0%, #0f172a 100%);
+            position: relative;
+        }
+        
+        .login-container::before {
+            content: '';
+            position: absolute;
+            width: 600px;
+            height: 600px;
+            background: radial-gradient(circle, rgba(0, 212, 255, 0.15) 0%, transparent 70%);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            top: 50%;
+            left: 50%;
+        }
+        
+        .login-card {
+            background: rgba(30, 41, 59, 0.9);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 24px;
+            padding: 48px;
+            width: 100%;
+            max-width: 450px;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .login-logo {
+            text-align: center;
+            margin-bottom: 32px;
+        }
+        
+        .login-logo i {
+            font-size: 64px;
+            background: linear-gradient(135deg, #00d4ff 0%, #ff6b6b 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .login-logo h2 {
+            margin-top: 16px;
+            font-size: 24px;
+            font-weight: 700;
+        }
+        
+        .form-control {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: var(--text-primary);
+            padding: 14px 16px;
+            border-radius: 12px;
+            transition: all 0.3s ease;
+        }
+        
+        .form-control:focus {
+            outline: none;
+            border-color: var(--secondary-color);
+            box-shadow: 0 0 0 4px rgba(0, 212, 255, 0.2);
+            background: rgba(255, 255, 255, 0.08);
+        }
+        
+        .form-control::placeholder {
+            color: var(--text-secondary);
+        }
+        
+        .btn-primary {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #00d4ff 0%, #1e3a5f 100%);
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0, 212, 255, 0.3);
+        }
+        
+        /* 主应用布局 */
+        .app-container {
+            display: none;
+            min-height: 100vh;
+        }
+        
+        .sidebar {
+            width: 280px;
+            background: var(--sidebar-bg);
+            position: fixed;
+            height: 100vh;
+            overflow-y: auto;
+            z-index: 1000;
+            border-right: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        
+        .sidebar-header {
+            padding: 32px 24px;
+            background: linear-gradient(180deg, rgba(30, 58, 95, 0.8) 0%, transparent 100%);
+        }
+        
+        .sidebar-header h3 {
+            margin: 0;
+            font-weight: 700;
+            font-size: 18px;
+        }
+        
+        .nav-menu {
+            padding: 16px 0;
+        }
+        
+        .nav-item {
+            padding: 16px 24px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border-left: 3px solid transparent;
+            display: flex;
+            align-items: center;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+        
+        .nav-item:hover {
+            background: rgba(0, 212, 255, 0.1);
+            color: var(--text-primary);
+            border-left-color: var(--secondary-color);
+        }
+        
+        .nav-item.active {
+            background: rgba(0, 212, 255, 0.15);
+            color: var(--text-primary);
+            border-left-color: var(--secondary-color);
+        }
+        
+        .nav-item i {
+            margin-right: 12px;
+            width: 20px;
+        }
+        
+        .main-content {
+            margin-left: 280px;
+            padding: 32px;
+            min-height: 100vh;
+        }
+        
+        /* 卡片样式 */
+        .card {
+            background: var(--card-bg);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 16px;
+            transition: all 0.3s ease;
+        }
+        
+        .card:hover {
+            border-color: rgba(0, 212, 255, 0.3);
+        }
+        
+        .card-header {
+            background: rgba(255, 255, 255, 0.03);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            padding: 20px 24px;
+            font-weight: 600;
+            font-size: 16px;
+        }
+        
+        .card-body {
+            padding: 24px;
+        }
+        
+        /* 统计卡片 */
+        .stat-card {
+            background: var(--card-bg);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 16px;
+            padding: 24px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--secondary-color), var(--accent-color));
+        }
+        
+        .stat-value {
+            font-size: 40px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            color: var(--text-primary);
+        }
+        
+        .stat-label {
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+        
+        .stat-icon {
+            width: 50px;
+            height: 50px;
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 16px;
+        }
+        
+        .stat-icon.primary {
+            background: rgba(0, 212, 255, 0.2);
+            color: var(--secondary-color);
+        }
+        
+        .stat-icon.success {
+            background: rgba(16, 185, 129, 0.2);
+            color: var(--success-color);
+        }
+        
+        .stat-icon.warning {
+            background: rgba(245, 158, 11, 0.2);
+            color: var(--warning-color);
+        }
+        
+        .stat-icon.danger {
+            background: rgba(239, 68, 68, 0.2);
+            color: var(--danger-color);
+        }
+        
+        /* 表格样式 */
+        .table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+        }
+        
+        .table thead th {
+            background: rgba(255, 255, 255, 0.03);
+            padding: 14px 16px;
+            font-weight: 600;
+            font-size: 13px;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        
+        .table tbody td {
+            padding: 14px 16px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+            font-size: 14px;
+        }
+        
+        .table tbody tr:hover {
+            background: rgba(0, 212, 255, 0.05);
+        }
+        
+        /* 徽章样式 */
+        .badge {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        
+        .badge-online {
+            background: rgba(16, 185, 129, 0.2);
+            color: var(--success-color);
+        }
+        
+        .badge-offline {
+            background: rgba(239, 68, 68, 0.2);
+            color: var(--danger-color);
+        }
+        
+        .badge-admin {
+            background: rgba(245, 158, 11, 0.2);
+            color: var(--warning-color);
+        }
+        
+        .badge-user {
+            background: rgba(59, 130, 246, 0.2);
+            color: #3b82f6;
+        }
+        
+        /* 按钮样式 */
+        .btn {
+            padding: 10px 20px;
+            border-radius: 10px;
+            font-weight: 600;
+            font-size: 14px;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #00d4ff 0%, #1e3a5f 100%);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(0, 212, 255, 0.3);
+        }
+        
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text-primary);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.15);
+        }
+        
+        .btn-danger {
+            background: rgba(239, 68, 68, 0.2);
+            color: var(--danger-color);
+        }
+        
+        .btn-danger:hover {
+            background: rgba(239, 68, 68, 0.3);
+        }
+        
+        /* 搜索框 */
+        .search-box {
+            position: relative;
+        }
+        
+        .search-box input {
+            width: 100%;
+            padding: 12px 40px 12px 16px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            color: var(--text-primary);
+        }
+        
+        .search-box input:focus {
+            outline: none;
+            border-color: var(--secondary-color);
+        }
+        
+        .search-box i {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-secondary);
+        }
+        
+        /* 图表容器 */
+        .chart-container {
+            background: var(--card-bg);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 16px;
+            padding: 24px;
+        }
+        
+        /* 模态框 */
+        .modal-content {
+            background: var(--card-bg);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+        }
+        
+        .modal-header {
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        
+        .modal-footer {
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        
+        /* Toast通知 */
+        .toast {
+            background: var(--card-bg);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+        }
+        
+        /* 加载动画 */
+        .spinner-border {
+            border-color: var(--secondary-color);
+            border-right-color: transparent;
+        }
+        
+        /* 分页 */
+        .page-link {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: var(--text-primary);
+            border-radius: 8px;
+            margin: 0 4px;
+        }
+        
+        .page-link:hover {
+            background: rgba(0, 212, 255, 0.2);
+            border-color: var(--secondary-color);
+        }
+        
+        .page-item.active .page-link {
+            background: var(--secondary-color);
+            border-color: var(--secondary-color);
+        }
+        
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+                position: fixed;
+                z-index: 9999;
+            }
+            
+            .sidebar.show {
+                transform: translateX(0);
+            }
+            
+            .main-content {
+                margin-left: 0;
+                padding: 16px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 登录页面 -->
+    <div class="login-container" id="loginPage">
+        <div class="login-card">
+            <div class="login-logo">
+                <i class="fas fa-heart-pulse"></i>
+                <h2>管理后台</h2>
+                <p class="text-secondary mt-2">智能皮肤健康监测系统</p>
+            </div>
+            
+            <form id="loginForm">
+                <div class="mb-4">
+                    <label class="form-label text-secondary">用户名</label>
+                    <input type="text" class="form-control" id="loginUsername" placeholder="请输入用户名">
+                </div>
+                <div class="mb-4">
+                    <label class="form-label text-secondary">密码</label>
+                    <input type="password" class="form-control" id="loginPassword" placeholder="请输入密码">
+                </div>
+                <button type="button" class="btn btn-primary w-100" onclick="handleLogin()">
+                    <i class="fas fa-sign-in-alt me-2"></i>登录
+                </button>
+            </form>
+        </div>
+    </div>
+    
+    <!-- 主应用 -->
+    <div class="app-container" id="appContainer">
+        <!-- 侧边栏 -->
+        <div class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <i class="fas fa-heart-pulse fa-2x text-secondary mb-2"></i>
+                <h3>管理中心</h3>
+            </div>
+            
+            <div class="nav-menu">
+                <div class="nav-item active" onclick="navigateTo('dashboard')">
+                    <i class="fas fa-tachometer-alt"></i>
+                    <span>数据概览</span>
+                </div>
+                <div class="nav-item" onclick="navigateTo('devices')">
+                    <i class="fas fa-microchip"></i>
+                    <span>设备管理</span>
+                </div>
+                <div class="nav-item" onclick="navigateTo('users')">
+                    <i class="fas fa-users"></i>
+                    <span>用户管理</span>
+                </div>
+                <div class="nav-item" onclick="navigateTo('statistics')">
+                    <i class="fas fa-chart-bar"></i>
+                    <span>统计分析</span>
+                </div>
+                <div class="nav-item" onclick="navigateTo('realtime')">
+                    <i class="fas fa-chart-line"></i>
+                    <span>实时监控</span>
+                </div>
+                <div class="nav-item" onclick="handleLogout()">
+                    <i class="fas fa-sign-out-alt"></i>
+                    <span>退出登录</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 主内容区 -->
+        <div class="main-content">
+            <!-- 顶部导航 -->
+            <div class="d-flex justify-content-between align-items-center mb-6">
+                <div>
+                    <h1 class="text-2xl font-bold" id="pageTitle">数据概览</h1>
+                    <p class="text-secondary mt-1">欢迎来到管理后台</p>
+                </div>
+                <div class="d-flex align-items-center gap-4">
+                    <div class="search-box" style="width: 300px;">
+                        <input type="text" placeholder="搜索..." id="searchInput">
+                        <i class="fas fa-search"></i>
+                    </div>
+                    <div class="text-secondary">
+                        <i class="fas fa-user-circle me-2"></i>
+                        <span id="currentUser">管理员</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 页面内容 -->
+            <div id="pageContent">
+                <!-- 动态加载内容 -->
+            </div>
+        </div>
+    </div>
+    
+    <!-- Toast通知容器 -->
+    <div class="toast-container position-fixed top-4 right-4 z-50" id="toastContainer"></div>
+    
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        // 全局配置
+        const API_BASE_URL = 'http://47.103.108.47:5000/api/admin';
+        let authToken = localStorage.getItem('adminToken') || '';
+        
+        // 工具函数
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toastContainer');
+            const toastId = 'toast-' + Date.now();
+            
+            const bgClass = {
+                'success': 'bg-success',
+                'error': 'bg-danger',
+                'warning': 'bg-warning',
+                'info': 'bg-info'
+            }[type] || 'bg-info';
+            
+            const iconClass = {
+                'success': 'fa-check-circle',
+                'error': 'fa-exclamation-circle',
+                'warning': 'fa-exclamation-triangle',
+                'info': 'fa-info-circle'
+            }[type] || 'fa-info-circle';
+            
+            const toastHTML = `
+                <div id="${toastId}" class="toast align-items-center text-white ${bgClass} border-0" role="alert">
+                    <div class="d-flex">
+                        <div class="toast-body">
+                            <i class="fas ${iconClass} me-2"></i>${message}
+                        </div>
+                        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+                    </div>
+                </div>
+            `;
+            
+            container.insertAdjacentHTML('beforeend', toastHTML);
+            const toast = new bootstrap.Toast(document.getElementById(toastId), { delay: 3000 });
+            toast.show();
+            
+            setTimeout(() => {
+                document.getElementById(toastId)?.remove();
+            }, 3500);
+        }
+        
+        async function apiRequest(endpoint, options = {}) {
+            const url = `${API_BASE_URL}${endpoint}`;
+            const headers = {
+                'Content-Type': 'application/json',
+                ...options.headers
+            };
+            
+            if (authToken) {
+                headers['Authorization'] = `Bearer ${authToken}`;
+            }
+            
+            try {
+                const response = await fetch(url, { ...options, headers });
+                const data = await response.json();
+                
+                if (response.status === 401) {
+                    handleLogout();
+                    showToast('登录已过期，请重新登录', 'warning');
+                    return null;
+                }
+                
+                return data;
+            } catch (error) {
+                showToast(`网络错误: ${error.message}`, 'error');
+                return null;
+            }
+        }
+        
+        // 认证模块
+        async function handleLogin() {
+            const username = document.getElementById('loginUsername').value.trim();
+            const password = document.getElementById('loginPassword').value.trim();
+            
+            if (!username || !password) {
+                showToast('请输入用户名和密码', 'warning');
+                return;
+            }
+            
+            // 使用小程序登录接口验证
+            const result = await fetch('http://47.103.108.47:5000/api/miniprogram/user/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, password })
+            });
+            
+            const data = await result.json();
+            
+            if (data.success && data.user.role === 'admin') {
+                authToken = data.token;
+                localStorage.setItem('adminToken', authToken);
+                document.getElementById('currentUser').textContent = data.user.nickname || data.user.username;
+                showToast('登录成功！', 'success');
+                showApp();
+            } else {
+                showToast(data.message || '登录失败，请使用管理员账号', 'error');
+            }
+        }
+        
+        function handleLogout() {
+            authToken = '';
+            localStorage.removeItem('adminToken');
+            document.getElementById('loginPage').style.display = 'flex';
+            document.getElementById('appContainer').style.display = 'none';
+            showToast('已退出登录', 'info');
+        }
+        
+        function showApp() {
+            document.getElementById('loginPage').style.display = 'none';
+            document.getElementById('appContainer').style.display = 'block';
+            navigateTo('dashboard');
+        }
+        
+        // 页面导航
+        function navigateTo(page) {
+            document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
+            event.target.closest('.nav-item')?.classList.add('active');
+            
+            const titles = {
+                'dashboard': '数据概览',
+                'devices': '设备管理',
+                'users': '用户管理',
+                'statistics': '统计分析',
+                'realtime': '实时监控'
+            };
+            document.getElementById('pageTitle').textContent = titles[page] || '数据概览';
+            
+            switch(page) {
+                case 'dashboard':
+                    loadDashboard();
+                    break;
+                case 'devices':
+                    loadDevices();
+                    break;
+                case 'users':
+                    loadUsers();
+                    break;
+                case 'statistics':
+                    loadStatistics();
+                    break;
+                case 'realtime':
+                    loadRealtime();
+                    break;
+            }
+        }
+        
+        // 加载仪表盘
+        async function loadDashboard() {
+            const content = `
+                <div class="row mb-6">
+                    <div class="col-lg-3 col-md-6 mb-4">
+                        <div class="stat-card">
+                            <div class="stat-icon primary">
+                                <i class="fas fa-microchip fa-xl"></i>
+                            </div>
+                            <div class="stat-value" id="totalDevices">-</div>
+                            <div class="stat-label">总设备数</div>
+                        </div>
+                    </div>
+                    <div class="col-lg-3 col-md-6 mb-4">
+                        <div class="stat-card">
+                            <div class="stat-icon success">
+                                <i class="fas fa-wifi fa-xl"></i>
+                            </div>
+                            <div class="stat-value" id="onlineDevices">-</div>
+                            <div class="stat-label">在线设备</div>
+                        </div>
+                    </div>
+                    <div class="col-lg-3 col-md-6 mb-4">
+                        <div class="stat-card">
+                            <div class="stat-icon warning">
+                                <i class="fas fa-users fa-xl"></i>
+                            </div>
+                            <div class="stat-value" id="totalUsers">-</div>
+                            <div class="stat-label">总用户数</div>
+                        </div>
+                    </div>
+                    <div class="col-lg-3 col-md-6 mb-4">
+                        <div class="stat-card">
+                            <div class="stat-icon danger">
+                                <i class="fas fa-database fa-xl"></i>
+                            </div>
+                            <div class="stat-value" id="todayRecords">-</div>
+                            <div class="stat-label">今日记录</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-lg-8 mb-6">
+                        <div class="chart-container">
+                            <h5 class="font-semibold mb-4">数据趋势（近7天）</h5>
+                            <canvas id="trendChart" height="100"></canvas>
+                        </div>
+                    </div>
+                    <div class="col-lg-4 mb-6">
+                        <div class="chart-container">
+                            <h5 class="font-semibold mb-4">设备状态分布</h5>
+                            <canvas id="deviceStatusChart" height="100"></canvas>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-lg-6 mb-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5>地域分布</h5>
+                            </div>
+                            <div class="card-body">
+                                <div id="geoDistribution">加载中...</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-6 mb-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5>最新设备</h5>
+                            </div>
+                            <div class="card-body">
+                                <div id="latestDevices">加载中...</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            document.getElementById('pageContent').innerHTML = content;
+            loadDashboardData();
+        }
+        
+        async function loadDashboardData() {
+            const result = await apiRequest('/dashboard');
+            
+            if (result && result.code === 200) {
+                const data = result.data;
+                
+                // 更新统计卡片
+                document.getElementById('totalDevices').textContent = data.devices.total;
+                document.getElementById('onlineDevices').textContent = data.devices.online;
+                document.getElementById('totalUsers').textContent = data.users.total;
+                document.getElementById('todayRecords').textContent = data.today.total_records;
+                
+                // 绘制趋势图
+                const ctx = document.getElementById('trendChart');
+                new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: data.weekly_trend.map(d => d.date),
+                        datasets: [{
+                            label: '皮肤数据',
+                            data: data.weekly_trend.map(d => d.skin_count),
+                            borderColor: '#00d4ff',
+                            backgroundColor: 'rgba(0, 212, 255, 0.1)',
+                            tension: 0.4
+                        }, {
+                            label: '环境数据',
+                            data: data.weekly_trend.map(d => d.env_count),
+                            borderColor: '#10b981',
+                            backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                            tension: 0.4
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: { legend: { position: 'top' } },
+                        scales: {
+                            y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.05)' } },
+                            x: { grid: { color: 'rgba(255,255,255,0.05)' } }
+                        }
+                    }
+                });
+                
+                // 绘制设备状态饼图
+                const statusCtx = document.getElementById('deviceStatusChart');
+                new Chart(statusCtx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['在线', '离线'],
+                        datasets: [{
+                            data: [data.devices.online, data.devices.offline],
+                            backgroundColor: ['#10b981', '#ef4444'],
+                            borderWidth: 0
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: { legend: { position: 'bottom' } }
+                    }
+                });
+            }
+            
+            // 加载地域分布
+            loadGeoDistribution();
+            
+            // 加载最新设备
+            loadLatestDevices();
+        }
+        
+        async function loadGeoDistribution() {
+            const result = await apiRequest('/devices/geo-distribution');
+            
+            if (result && result.code === 200) {
+                const distribution = result.data;
+                let html = '<ul class="list-group">';
+                distribution.forEach(item => {
+                    html += `
+                        <li class="list-group-item d-flex justify-content-between align-items-center bg-transparent border-0 border-bottom border-white/10">
+                            <span>${item.location}</span>
+                            <span class="badge bg-secondary">${item.count} 台</span>
+                        </li>
+                    `;
+                });
+                html += '</ul>';
+                document.getElementById('geoDistribution').innerHTML = html;
+            }
+        }
+        
+        async function loadLatestDevices() {
+            const result = await apiRequest('/devices?page=1&per_page=5');
+            
+            if (result && result.code === 200) {
+                const devices = result.data.items;
+                let html = '<table class="table">';
+                html += '<thead><tr><th>设备ID</th><th>类型</th><th>状态</th><th>位置</th></tr></thead><tbody>';
+                devices.forEach(device => {
+                    html += `
+                        <tr>
+                            <td><code>${device.device_id}</code></td>
+                            <td>${device.device_type || '-'}</td>
+                            <td><span class="badge ${device.status === 'online' ? 'badge-online' : 'badge-offline'}">${device.status}</span></td>
+                            <td>${device.location || '-'}</td>
+                        </tr>
+                    `;
+                });
+                html += '</tbody></table>';
+                document.getElementById('latestDevices').innerHTML = html;
+            }
+        }
+        
+        // 加载设备管理
+        async function loadDevices() {
+            const content = `
+                <div class="card mb-6">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5>设备列表</h5>
+                        <div class="d-flex gap-3">
+                            <select class="form-control" style="width: auto;" id="deviceStatusFilter">
+                                <option value="">全部状态</option>
+                                <option value="online">在线</option>
+                                <option value="offline">离线</option>
+                            </select>
+                            <button class="btn btn-primary" onclick="addDevice()">
+                                <i class="fas fa-plus"></i> 添加设备
+                            </button>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>设备ID</th>
+                                        <th>类型</th>
+                                        <th>状态</th>
+                                        <th>电量</th>
+                                        <th>位置</th>
+                                        <th>绑定数</th>
+                                        <th>创建时间</th>
+                                        <th>操作</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="deviceTableBody">
+                                    <tr><td colspan="8" class="text-center"><div class="spinner-border" role="status"></div></td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <nav id="devicePagination" class="mt-4"></nav>
+                    </div>
+                </div>
+            `;
+            
+            document.getElementById('pageContent').innerHTML = content;
+            loadDeviceList();
+            
+            document.getElementById('deviceStatusFilter').addEventListener('change', loadDeviceList);
+        }
+        
+        let currentDevicePage = 1;
+        
+        async function loadDeviceList() {
+            const status = document.getElementById('deviceStatusFilter')?.value || '';
+            const result = await apiRequest(`/devices?page=${currentDevicePage}&per_page=10&status=${status}`);
+            
+            if (result && result.code === 200) {
+                const devices = result.data.items;
+                const pagination = result.data;
+                
+                let html = '';
+                devices.forEach(device => {
+                    html += `
+                        <tr>
+                            <td><code>${device.device_id}</code></td>
+                            <td>${device.device_type || '-'}</td>
+                            <td><span class="badge ${device.status === 'online' ? 'badge-online' : 'badge-offline'}">${device.status}</span></td>
+                            <td>${device.battery_level ? device.battery_level + '%' : '-'}</td>
+                            <td>${device.location || '-'}</td>
+                            <td><span class="badge bg-secondary">${device.bind_count || 0}</span></td>
+                            <td>${device.created_at?.substring(0, 10) || '-'}</td>
+                            <td>
+                                <button class="btn btn-secondary btn-sm" onclick="editDevice('${device.device_id}')">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button class="btn btn-danger btn-sm ms-2" onclick="deleteDevice('${device.device_id}')">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    `;
+                });
+                
+                document.getElementById('deviceTableBody').innerHTML = html;
+                renderPagination('devicePagination', pagination, (page) => { currentDevicePage = page; loadDeviceList(); });
+            }
+        }
+        
+        function addDevice() {
+            showToast('添加设备功能开发中', 'info');
+        }
+        
+        function editDevice(deviceId) {
+            showToast(`编辑设备 ${deviceId}`, 'info');
+        }
+        
+        async function deleteDevice(deviceId) {
+            if (!confirm(`确定要删除设备 ${deviceId} 吗？`)) return;
+            
+            const result = await apiRequest(`/devices/${deviceId}`, { method: 'DELETE' });
+            if (result && result.code === 200) {
+                showToast('删除成功', 'success');
+                loadDeviceList();
+            } else {
+                showToast('删除失败', 'error');
+            }
+        }
+        
+        // 加载用户管理
+        async function loadUsers() {
+            const content = `
+                <div class="card mb-6">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5>用户列表</h5>
+                        <div class="d-flex gap-3">
+                            <select class="form-control" style="width: auto;" id="userRoleFilter">
+                                <option value="">全部角色</option>
+                                <option value="admin">管理员</option>
+                                <option value="user">普通用户</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>用户名</th>
+                                        <th>昵称</th>
+                                        <th>角色</th>
+                                        <th>状态</th>
+                                        <th>设备数</th>
+                                        <th>最后登录</th>
+                                        <th>创建时间</th>
+                                        <th>操作</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="userTableBody">
+                                    <tr><td colspan="8" class="text-center"><div class="spinner-border" role="status"></div></td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <nav id="userPagination" class="mt-4"></nav>
+                    </div>
+                </div>
+            `;
+            
+            document.getElementById('pageContent').innerHTML = content;
+            loadUserList();
+            
+            document.getElementById('userRoleFilter').addEventListener('change', loadUserList);
+        }
+        
+        let currentUserPage = 1;
+        
+        async function loadUserList() {
+            const role = document.getElementById('userRoleFilter')?.value || '';
+            const result = await apiRequest(`/users?page=${currentUserPage}&per_page=10&role=${role}`);
+            
+            if (result && result.code === 200) {
+                const users = result.data.items;
+                const pagination = result.data;
+                
+                let html = '';
+                users.forEach(user => {
+                    html += `
+                        <tr>
+                            <td>${user.username}</td>
+                            <td>${user.nickname || '-'}</td>
+                            <td><span class="badge ${user.role === 'admin' ? 'badge-admin' : 'badge-user'}">${user.role}</span></td>
+                            <td><span class="badge ${user.status === 'active' ? 'badge-online' : 'badge-offline'}">${user.status}</span></td>
+                            <td>${user.device_count || 0}</td>
+                            <td>${user.last_login?.substring(0, 19) || '-'}</td>
+                            <td>${user.created_at?.substring(0, 10) || '-'}</td>
+                            <td>
+                                <button class="btn btn-secondary btn-sm" onclick="editUser(${user.id})">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    `;
+                });
+                
+                document.getElementById('userTableBody').innerHTML = html;
+                renderPagination('userPagination', pagination, (page) => { currentUserPage = page; loadUserList(); });
+            }
+        }
+        
+        function editUser(userId) {
+            showToast(`编辑用户 ${userId}`, 'info');
+        }
+        
+        // 加载统计分析
+        async function loadStatistics() {
+            const content = `
+                <div class="row mb-6">
+                    <div class="col-lg-6">
+                        <div class="chart-container">
+                            <h5 class="font-semibold mb-4">月度数据统计</h5>
+                            <canvas id="monthlyChart" height="100"></canvas>
+                        </div>
+                    </div>
+                    <div class="col-lg-6">
+                        <div class="chart-container">
+                            <h5 class="font-semibold mb-4">皮肤数据平均值</h5>
+                            <canvas id="skinAvgChart" height="100"></canvas>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row mb-6">
+                    <div class="col-lg-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5>皮肤数据统计</h5>
+                            </div>
+                            <div class="card-body" id="skinStats">加载中...</div>
+                        </div>
+                    </div>
+                    <div class="col-lg-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5>环境数据统计</h5>
+                            </div>
+                            <div class="card-body" id="envStats">加载中...</div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            document.getElementById('pageContent').innerHTML = content;
+            loadStatisticsData();
+        }
+        
+        async function loadStatisticsData() {
+            // 加载月度统计
+            const monthlyResult = await apiRequest('/statistics/monthly');
+            if (monthlyResult && monthlyResult.code === 200) {
+                const monthlyData = monthlyResult.data.monthly_data;
+                
+                const ctx = document.getElementById('monthlyChart');
+                new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: monthlyData.map(d => `第${d.month}月`),
+                        datasets: [{
+                            label: '数据量',
+                            data: monthlyData.map(d => d.skin_count),
+                            backgroundColor: 'rgba(0, 212, 255, 0.6)',
+                            borderRadius: 8
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        scales: {
+                            y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.05)' } },
+                            x: { grid: { color: 'rgba(255,255,255,0.05)' } }
+                        }
+                    }
+                });
+            }
+            
+            // 加载皮肤数据统计
+            const skinResult = await apiRequest('/statistics/skin');
+            if (skinResult && skinResult.code === 200) {
+                const stats = skinResult.data.summary;
+                
+                const avgCtx = document.getElementById('skinAvgChart');
+                new Chart(avgCtx, {
+                    type: 'radar',
+                    data: {
+                        labels: ['水分含量', '油脂度', '温度'],
+                        datasets: [{
+                            label: '平均值',
+                            data: [stats.avg_moisture, stats.avg_oiliness, stats.avg_temperature],
+                            backgroundColor: 'rgba(0, 212, 255, 0.2)',
+                            borderColor: '#00d4ff'
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        scales: { r: { beginAtZero: true } }
+                    }
+                });
+                
+                let skinHtml = `
+                    <div class="row">
+                        <div class="col-6">
+                            <div class="stat-value">${stats.total_count}</div>
+                            <div class="stat-label">总记录数</div>
+                        </div>
+                        <div class="col-6">
+                            <div class="stat-value">${stats.avg_moisture}</div>
+                            <div class="stat-label">平均水分</div>
+                        </div>
+                        <div class="col-6 mt-4">
+                            <div class="stat-value">${stats.avg_oiliness}</div>
+                            <div class="stat-label">平均油脂度</div>
+                        </div>
+                        <div class="col-6 mt-4">
+                            <div class="stat-value">${stats.avg_temperature}°C</div>
+                            <div class="stat-label">平均温度</div>
+                        </div>
+                    </div>
+                `;
+                document.getElementById('skinStats').innerHTML = skinHtml;
+            }
+            
+            // 加载环境数据统计
+            const envResult = await apiRequest('/statistics/environment');
+            if (envResult && envResult.code === 200) {
+                const stats = envResult.data;
+                
+                let envHtml = `
+                    <div class="row">
+                        <div class="col-6">
+                            <div class="stat-value">${stats.total_count}</div>
+                            <div class="stat-label">总记录数</div>
+                        </div>
+                        <div class="col-6">
+                            <div class="stat-value">${stats.avg_temperature}°C</div>
+                            <div class="stat-label">平均温度</div>
+                        </div>
+                        <div class="col-6 mt-4">
+                            <div class="stat-value">${stats.avg_humidity}%</div>
+                            <div class="stat-label">平均湿度</div>
+                        </div>
+                        <div class="col-6 mt-4">
+                            <div class="stat-value">${stats.avg_pm25}</div>
+                            <div class="stat-label">平均PM2.5</div>
+                        </div>
+                    </div>
+                `;
+                document.getElementById('envStats').innerHTML = envHtml;
+            }
+        }
+        
+        // 加载实时监控
+        async function loadRealtime() {
+            const content = `
+                <div class="row mb-6">
+                    <div class="col-lg-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5>最新皮肤数据</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="table-responsive">
+                                    <table class="table" id="realtimeSkinTable">
+                                        <thead>
+                                            <tr>
+                                                <th>设备ID</th>
+                                                <th>水分</th>
+                                                <th>油脂度</th>
+                                                <th>温度</th>
+                                                <th>时间</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr><td colspan="5" class="text-center"><div class="spinner-border" role="status"></div></td></tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5>最新环境数据</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="table-responsive">
+                                    <table class="table" id="realtimeEnvTable">
+                                        <thead>
+                                            <tr>
+                                                <th>设备ID</th>
+                                                <th>温度</th>
+                                                <th>湿度</th>
+                                                <th>PM2.5</th>
+                                                <th>时间</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr><td colspan="5" class="text-center"><div class="spinner-border" role="status"></div></td></tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <button class="btn btn-primary" onclick="refreshRealtime()">
+                    <i class="fas fa-refresh"></i> 刷新数据
+                </button>
+            `;
+            
+            document.getElementById('pageContent').innerHTML = content;
+            loadRealtimeData();
+        }
+        
+        async function loadRealtimeData() {
+            // 加载皮肤数据
+            const skinResult = await apiRequest('/realtime/skin?limit=10');
+            if (skinResult && skinResult.code === 200) {
+                const data = skinResult.data;
+                let html = '';
+                data.forEach(item => {
+                    html += `
+                        <tr>
+                            <td><code>${item.device_id}</code></td>
+                            <td>${item.moisture}</td>
+                            <td>${item.oiliness}</td>
+                            <td>${item.temperature}°C</td>
+                            <td>${item.sensor_time?.substring(11, 19) || '-'}</td>
+                        </tr>
+                    `;
+                });
+                document.getElementById('realtimeSkinTable tbody').innerHTML = html;
+            }
+            
+            // 加载环境数据
+            const envResult = await apiRequest('/realtime/environment?limit=10');
+            if (envResult && envResult.code === 200) {
+                const data = envResult.data;
+                let html = '';
+                data.forEach(item => {
+                    html += `
+                        <tr>
+                            <td><code>${item.device_id}</code></td>
+                            <td>${item.temperature}°C</td>
+                            <td>${item.humidity}%</td>
+                            <td>${item.pm25 || '-'}</td>
+                            <td>${item.sensor_time?.substring(11, 19) || '-'}</td>
+                        </tr>
+                    `;
+                });
+                document.getElementById('realtimeEnvTable tbody').innerHTML = html;
+            }
+        }
+        
+        function refreshRealtime() {
+            loadRealtimeData();
+            showToast('数据已刷新', 'success');
+        }
+        
+        // 分页渲染
+        function renderPagination(containerId, pagination, onPageChange) {
+            const container = document.getElementById(containerId);
+            if (!container || pagination.pages <= 1) {
+                container.innerHTML = '';
+                return;
+            }
+            
+            let html = `<ul class="pagination justify-content-center">`;
+            
+            // 上一页
+            if (pagination.page > 1) {
+                html += `<li class="page-item"><button class="page-link" onclick="onPageChange(${pagination.page - 1})">上一页</button></li>`;
+            }
+            
+            // 页码
+            for (let i = 1; i <= pagination.pages; i++) {
+                if (i === pagination.page) {
+                    html += `<li class="page-item active"><button class="page-link">${i}</button></li>`;
+                } else {
+                    html += `<li class="page-item"><button class="page-link" onclick="onPageChange(${i})">${i}</button></li>`;
+                }
+            }
+            
+            // 下一页
+            if (pagination.page < pagination.pages) {
+                html += `<li class="page-item"><button class="page-link" onclick="onPageChange(${pagination.page + 1})">下一页</button></li>`;
+            }
+            
+            html += `</ul>`;
+            container.innerHTML = html;
+        }
+        
+        // 页面加载时检查登录状态
+        document.addEventListener('DOMContentLoaded', () => {
+            if (authToken) {
+                showApp();
+            }
+        });
+    </script>
+</body>
+</html>

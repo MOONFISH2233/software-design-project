@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>软件设计学习指南</title>
+<style>
+body{font-family:Arial,sans-serif;background:linear-gradient(135deg,#667eea,#764ba2);padding:20px}
+.container{max-width:1200px;margin:0 auto;background:white;border-radius:15px;padding:30px}
+h1{color:#667eea;text-align:center}
+.tab{display:inline-block;padding:10px 20px;margin:5px;cursor:pointer;background:#f0f0f0;border-radius:5px}
+.tab.active{background:#667eea;color:white}
+.content{display:none;margin-top:20px}
+.content.active{display:block}
+.card{background:#f9f9f9;border-left:4px solid #667eea;padding:15px;margin:10px 0;border-radius:5px}
+code{background:#2d2d2d;color:#fff;padding:2px 6px;border-radius:3px}
+table{width:100%;border-collapse:collapse;margin:15px 0}
+th{background:#667eea;color:white;padding:10px;text-align:left}
+td{padding:8px;border-bottom:1px solid #ddd}
+</style>
+</head>
+<body>
+<div class="container">
+<h1>🎓 软件设计项目学习指南</h1>
+<p style="text-align:center">服务器: 47.103.108.47 | 完整技术栈解析</p>
+
+<div style="text-align:center;margin:20px 0">
+<span class="tab active" onclick="show('overview')">总览</span>
+<span class="tab" onclick="show('week3')">第3周</span>
+<span class="tab" onclick="show('week4')">第4周</span>
+<span class="tab" onclick="show('week5')">第5周</span>
+<span class="tab" onclick="show('week6')">第6周</span>
+<span class="tab" onclick="show('week7')">第7周</span>
+</div>
+
+<div id="overview" class="content active">
+<h2>📊 项目完成情况</h2>
+<div class="card">
+<h3>已完成任务</h3>
+<ul>
+<li>✅ 第3周: Flask数据服务器基础 (文件存储+日志)</li>
+<li>✅ 第4周: Redis消息队列改造 + 模块化架构</li>
+<li>✅ 第5周: JWT/AES加密鉴权 + JMeter压测(QPS 170+)</li>
+<li>✅ 第6周: MongoDB数据存储 (双写模式)</li>
+<li>✅ 第7周: MySQL 8.0 + 定时统计 + 小程序规划</li>
+</ul>
+</div>
+<div class="card">
+<h3>技术栈</h3>
+<table>
+<tr><th>组件</th><th>技术</th><th>版本</th></tr>
+<tr><td>Web框架</td><td>Flask + Gunicorn</td><td>2.0.3 + 21.2.0</td></tr>
+<tr><td>消息队列</td><td>Redis Streams</td><td>6.2.20</td></tr>
+<tr><td>NoSQL</td><td>MongoDB</td><td>6.0.27</td></tr>
+<tr><td>SQL</td><td>MySQL</td><td>8.0.46</td></tr>
+<tr><td>认证</td><td>JWT + AES-256</td><td>PyJWT + cryptography</td></tr>
+</table>
+</div>
+</div>
+
+<div id="week3" class="content">
+<h2>📅 第3周: Flask基础</h2>
+<div class="card">
+<h3>核心知识点</h3>
+<p><strong>Flask是什么?</strong> 轻量级Python Web框架,适合快速构建RESTful API</p>
+<p><strong>为什么需要日志?</strong> 故障排查、性能监控、审计追踪、数据分析</p>
+<p><strong>数据传输:</strong> 本地→云端(local_to_cloud.py)、云端→云端(cloud_to_cloud.py)</p>
+<h4>代码示例</h4>
+<pre><code>@app.route('/api/receive', methods=['POST'])
+def receive_data():
+    data = request.get_json()
+    filename = f"data/sensor_{timestamp}.json"
+    with open(filename, 'w') as f:
+        json.dump(data, f)
+    return jsonify({'status': 'success'}), 200</code></pre>
+</div>
+</div>
+
+<div id="week4" class="content">
+<h2>📅 第4周: MQ改造</h2>
+<div class="card">
+<h3>为什么需要消息队列?</h3>
+<p>❌ HTTP直连问题: 同步阻塞、耦合度高、峰值压力大<br>
+✅ MQ优势: 异步解耦、削峰填谷、可靠传输、可扩展</p>
+<h3>Redis Streams</h3>
+<p>Stream列表: sensor:raw → sensor:validated → sensor:write → sensor:logs</p>
+<h3>四大模块</h3>
+<ul>
+<li><strong>module_receiver.py</strong>: 从MQ读取原始数据</li>
+<li><strong>module_validator.py</strong>: 验证数据合理性</li>
+<li><strong>module_writer.py</strong>: 写入MongoDB/文件</li>
+<li><strong>module_logger.py</strong>: 异步日志记录</li>
+</ul>
+</div>
+</div>
+
+<div id="week5" class="content">
+<h2>📅 第5周: 安全加固</h2>
+<div class="card">
+<h3>JWT认证流程</h3>
+<p>1. 登录获取Token → 2. 请求携带Token → 3. 服务器验证签名</p>
+<h3>AES-256加密</h3>
+<p>客户端加密 → 发送密文 → 服务器解密 → 处理业务</p>
+<h3>压力测试结果</h3>
+<table>
+<tr><th>指标</th><th>数值</th></tr>
+<tr><td>并发线程</td><td>15</td></tr>
+<tr><td>QPS</td><td>170+</td></tr>
+<tr><td>成功率</td><td>100%</td></tr>
+<tr><td>平均响应时间</td><td>85ms</td></tr>
+</table>
+</div>
+</div>
+
+<div id="week6" class="content">
+<h2>📅 第6周: MongoDB</h2>
+<div class="card">
+<h3>三个核心集合</h3>
+<ul>
+<li><strong>skin_sensor</strong>: device_id, moisture, oiliness, temperature</li>
+<li><strong>environment_sensor</strong>: device_id, temperature, humidity, pm25, co2</li>
+<li><strong>device_status</strong>: device_id, status, battery_level</li>
+</ul>
+<h3>三种写入模式</h3>
+<p>mode='mongodb' / 'file' / 'both' (双写+降级)</p>
+</div>
+</div>
+
+<div id="week7" class="content">
+<h2>📅 第7周: MySQL + 定时任务</h2>
+<div class="card">
+<h3>为什么需要MySQL?</h3>
+<p>MongoDB存原始数据(高频写入), MySQL存统计数据(复杂查询)</p>
+<h3>APScheduler定时任务</h3>
+<p>每天凌晨2:00自动统计前一天MongoDB数据,聚合后写入MySQL</p>
+<h3>小程序7大模块</h3>
+<ol>
+<li>用户中心 2.实时监测 3.历史趋势 4.智能分析<br>
+5.护理建议 6.设备管理 7.消息通知</li>
+</ol>
+</div>
+</div>
+
+</div>
+<script>
+function show(id){
+document.querySelectorAll('.content').forEach(e=>e.classList.remove('active'));
+document.querySelectorAll('.tab').forEach(e=>e.classList.remove('active'));
+document.getElementById(id).classList.add('active');
+event.target.classList.add('active');
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,2364 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>皮肤健康监测系统</title>
+    
+    <!-- Bootstrap 5.3 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome 6.4 -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    
+    <style>
+        :root {
+            --primary-color: #6366f1;
+            --primary-dark: #4f46e5;
+            --secondary-color: #8b5cf6;
+            --success-color: #10b981;
+            --info-color: #3b82f6;
+            --warning-color: #f59e0b;
+            --danger-color: #ef4444;
+            --dark-color: #1f2937;
+            --light-color: #f9fafb;
+            --gradient-primary: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --gradient-success: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        
+        /* 登录页面样式 - 现代化设计 */
+        .login-container {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--gradient-primary);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .login-container::before {
+            content: '';
+            position: absolute;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 1px, transparent 1px);
+            background-size: 50px 50px;
+            animation: moveGrid 20s linear infinite;
+        }
+        
+        @keyframes moveGrid {
+            0% { transform: translate(0, 0); }
+            100% { transform: translate(50px, 50px); }
+        }
+        
+        .login-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 24px;
+            box-shadow: var(--shadow-xl);
+            padding: 48px;
+            width: 100%;
+            max-width: 480px;
+            position: relative;
+            z-index: 1;
+            animation: slideUp 0.6s ease-out;
+        }
+        
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .login-logo {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+        
+        .login-logo i {
+            font-size: 72px;
+            background: var(--gradient-primary);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            filter: drop-shadow(0 4px 6px rgba(102, 126, 234, 0.3));
+        }
+        
+        .login-logo h2 {
+            margin-top: 16px;
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--dark-color);
+        }
+        
+        .form-group {
+            margin-bottom: 24px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: var(--dark-color);
+            font-size: 14px;
+        }
+        
+        .form-control {
+            width: 100%;
+            padding: 14px 16px;
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            font-size: 15px;
+            transition: all 0.3s ease;
+            background: white;
+        }
+        
+        .form-control:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
+        }
+        
+        .btn-primary {
+            width: 100%;
+            padding: 14px;
+            background: var(--gradient-primary);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 6px rgba(102, 126, 234, 0.3);
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 12px rgba(102, 126, 234, 0.4);
+        }
+        
+        .btn-primary:active {
+            transform: translateY(0);
+        }
+        
+        /* 主应用布局 - 专业侧边栏 */
+        .app-container {
+            display: none;
+            min-height: 100vh;
+            background: #f3f4f6;
+        }
+        
+        .sidebar {
+            width: 280px;
+            background: white;
+            position: fixed;
+            height: 100vh;
+            overflow-y: auto;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 1000;
+            box-shadow: var(--shadow-lg);
+        }
+        
+        .sidebar-brand {
+            padding: 32px 24px;
+            background: var(--gradient-primary);
+            color: white;
+            text-align: center;
+        }
+        
+        .sidebar-brand h4 {
+            margin: 0;
+            font-weight: 700;
+            font-size: 20px;
+            letter-spacing: -0.5px;
+        }
+        
+        .sidebar-brand p {
+            margin: 8px 0 0 0;
+            font-size: 12px;
+            opacity: 0.9;
+        }
+        
+        .nav-menu {
+            padding: 16px 0;
+        }
+        
+        .nav-item {
+            padding: 16px 24px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border-left: 4px solid transparent;
+            display: flex;
+            align-items: center;
+            color: #6b7280;
+            font-weight: 500;
+            position: relative;
+        }
+        
+        .nav-item:hover {
+            background: #f9fafb;
+            color: var(--primary-color);
+            border-left-color: var(--primary-color);
+        }
+        
+        .nav-item.active {
+            background: linear-gradient(90deg, rgba(99, 102, 241, 0.1) 0%, transparent 100%);
+            color: var(--primary-color);
+            border-left-color: var(--primary-color);
+        }
+        
+        .nav-item i {
+            margin-right: 12px;
+            width: 20px;
+            font-size: 18px;
+        }
+        
+        .nav-item .badge {
+            position: absolute;
+            right: 24px;
+            background: var(--danger-color);
+            color: white;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+        
+        .main-content {
+            margin-left: 280px;
+            padding: 32px;
+            min-height: 100vh;
+        }
+        
+        /* 专业卡片设计 */
+        .card {
+            background: white;
+            border-radius: 16px;
+            box-shadow: var(--shadow-md);
+            border: none;
+            transition: all 0.3s ease;
+            overflow: hidden;
+        }
+        
+        .card:hover {
+            box-shadow: var(--shadow-xl);
+            transform: translateY(-4px);
+        }
+        
+        .card-header {
+            background: white;
+            border-bottom: 1px solid #f3f4f6;
+            padding: 20px 24px;
+            font-weight: 600;
+            font-size: 16px;
+            color: var(--dark-color);
+        }
+        
+        .card-body {
+            padding: 24px;
+        }
+        
+        .card-footer {
+            background: #f9fafb;
+            border-top: 1px solid #f3f4f6;
+            padding: 16px 24px;
+        }
+        
+        /* 统计卡片 - 渐变设计 */
+        .stat-card {
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: var(--shadow-md);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+        }
+        
+        .stat-card.primary::before {
+            background: var(--gradient-primary);
+        }
+        
+        .stat-card.success::before {
+            background: var(--gradient-success);
+        }
+        
+        .stat-card.info::before {
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+        }
+        
+        .stat-card.warning::before {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-xl);
+        }
+        
+        .stat-value {
+            font-size: 36px;
+            font-weight: 700;
+            color: var(--dark-color);
+            margin-bottom: 8px;
+        }
+        
+        .stat-label {
+            font-size: 14px;
+            color: #6b7280;
+            font-weight: 500;
+        }
+        
+        /* 按钮样式优化 */
+        .btn {
+            padding: 10px 20px;
+            border-radius: 10px;
+            font-weight: 600;
+            font-size: 14px;
+            transition: all 0.3s ease;
+            border: none;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .btn-primary {
+            background: var(--gradient-primary);
+            color: white;
+            box-shadow: 0 4px 6px rgba(102, 126, 234, 0.3);
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(102, 126, 234, 0.4);
+        }
+        
+        .btn-success {
+            background: var(--gradient-success);
+            color: white;
+            box-shadow: 0 4px 6px rgba(16, 185, 129, 0.3);
+        }
+        
+        .btn-info {
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            color: white;
+            box-shadow: 0 4px 6px rgba(59, 130, 246, 0.3);
+        }
+        
+        /* 表格样式优化 */
+        .table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+        }
+        
+        .table thead th {
+            background: #f9fafb;
+            padding: 14px 16px;
+            font-weight: 600;
+            font-size: 13px;
+            color: #6b7280;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border-bottom: 2px solid #e5e7eb;
+        }
+        
+        .table tbody td {
+            padding: 16px;
+            border-bottom: 1px solid #f3f4f6;
+            font-size: 14px;
+            color: var(--dark-color);
+        }
+        
+        .table tbody tr {
+            transition: all 0.2s ease;
+        }
+        
+        .table tbody tr:hover {
+            background: #f9fafb;
+        }
+        
+        /* 徽章样式 */
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            letter-spacing: 0.3px;
+        }
+        
+        .badge-success {
+            background: #d1fae5;
+            color: #065f46;
+        }
+        
+        .badge-warning {
+            background: #fef3c7;
+            color: #92400e;
+        }
+        
+        .badge-danger {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+        
+        .badge-info {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+        
+        /* 加载动画 */
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #f3f4f6;
+            border-top: 4px solid var(--primary-color);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* Toast通知 */
+        .toast {
+            position: fixed;
+            top: 24px;
+            right: 24px;
+            background: white;
+            padding: 16px 24px;
+            border-radius: 12px;
+            box-shadow: var(--shadow-xl);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            z-index: 9999;
+            animation: slideInRight 0.3s ease-out;
+            min-width: 300px;
+        }
+        
+        @keyframes slideInRight {
+            from {
+                transform: translateX(400px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+        
+        .toast.success {
+            border-left: 4px solid var(--success-color);
+        }
+        
+        .toast.error {
+            border-left: 4px solid var(--danger-color);
+        }
+        
+        .toast.info {
+            border-left: 4px solid var(--info-color);
+        }
+        
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+            }
+            
+            .sidebar.show {
+                transform: translateX(0);
+            }
+            
+            .main-content {
+                margin-left: 0;
+                padding: 16px;
+            }
+        }
+        
+        /* 空状态 */
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #9ca3af;
+        }
+        
+        .empty-state i {
+            font-size: 64px;
+            margin-bottom: 16px;
+            opacity: 0.5;
+        }
+        
+        .empty-state p {
+            font-size: 16px;
+            margin-top: 8px;
+        }
+        
+        /* 分页样式 */
+        .pagination {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+            margin-top: 24px;
+        }
+        
+        .page-item {
+            list-style: none;
+        }
+        
+        .page-link {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 40px;
+            height: 40px;
+            padding: 0 12px;
+            border-radius: 10px;
+            border: 2px solid #e5e7eb;
+            color: #6b7280;
+            font-weight: 600;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            text-decoration: none;
+        }
+        
+        .page-link:hover {
+            border-color: var(--primary-color);
+            color: var(--primary-color);
+        }
+        
+        .page-item.active .page-link {
+            background: var(--gradient-primary);
+            border-color: var(--primary-color);
+            color: white;
+        }
+        
+        /* 图表容器 */
+        .chart-container {
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: var(--shadow-md);
+        }
+        
+        /* 表单选择器 */
+        .form-select {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e5e7eb;
+            border-radius: 10px;
+            font-size: 14px;
+            transition: all 0.3s ease;
+            background: white;
+            cursor: pointer;
+        }
+        
+        .form-select:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
+        }
+        
+        /* 代码块 */
+        code {
+            background: #f3f4f6;
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 13px;
+            color: var(--primary-color);
+        }
+        
+        /* 过渡动画 */
+        .transition-all {
+            transition: all 0.3s ease;
+        }
+        
+        .hover-shadow:hover {
+            box-shadow: var(--shadow-xl);
+        }
+    </style>
+</head>
+<body>
+    <!-- Loading遮罩 -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-spinner"></div>
+    </div>
+    
+    <!-- Toast通知容器 -->
+    <div class="toast-container" id="toastContainer"></div>
+    
+    <!-- 登录页面 -->
+    <div class="login-container" id="loginPage">
+        <div class="login-card">
+            <div class="login-logo">
+                <i class="fas fa-heartbeat"></i>
+                <h3 class="mt-3">皮肤健康监测系统</h3>
+                <p class="text-muted">Skin Health Monitoring System</p>
+            </div>
+            
+            <!-- 登录表单 -->
+            <div id="loginForm">
+                <div class="mb-3">
+                    <label class="form-label">用户名</label>
+                    <input type="text" class="form-control" id="loginUsername" placeholder="请输入用户名">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">密码</label>
+                    <input type="password" class="form-control" id="loginPassword" placeholder="请输入密码">
+                </div>
+                <button class="btn btn-primary w-100 mb-3" onclick="handleLogin()">
+                    <i class="fas fa-sign-in-alt me-2"></i>登录
+                </button>
+                <div class="text-center">
+                    <span class="text-muted">还没有账号？</span>
+                    <a href="#" onclick="showRegisterForm()" class="text-decoration-none">立即注册</a>
+                </div>
+            </div>
+            
+            <!-- 注册表单 -->
+            <div id="registerForm" style="display: none;">
+                <div class="mb-3">
+                    <label class="form-label">用户名</label>
+                    <input type="text" class="form-control" id="regUsername" placeholder="请输入用户名">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">密码</label>
+                    <input type="password" class="form-control" id="regPassword" placeholder="请输入密码（至少6位）">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">手机号</label>
+                    <input type="tel" class="form-control" id="regPhone" placeholder="请输入手机号">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">昵称（可选）</label>
+                    <input type="text" class="form-control" id="regNickname" placeholder="请输入昵称">
+                </div>
+                <button class="btn btn-success w-100 mb-3" onclick="handleRegister()">
+                    <i class="fas fa-user-plus me-2"></i>注册
+                </button>
+                <div class="text-center">
+                    <span class="text-muted">已有账号？</span>
+                    <a href="#" onclick="showLoginForm()" class="text-decoration-none">立即登录</a>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 主应用 -->
+    <div class="app-container" id="appContainer">
+        <!-- 侧边栏 -->
+        <div class="sidebar" id="sidebar">
+            <div class="sidebar-brand">
+                <i class="fas fa-heartbeat fa-2x mb-2"></i>
+                <h4>健康监测</h4>
+            </div>
+            
+            <div class="nav-item active" onclick="navigateTo('dashboard')">
+                <i class="fas fa-tachometer-alt"></i>
+                <span>仪表板</span>
+            </div>
+            <div class="nav-item" onclick="navigateTo('devices')">
+                <i class="fas fa-microchip"></i>
+                <span>设备管理</span>
+            </div>
+            <div class="nav-item" onclick="navigateTo('skinData')">
+                <i class="fas fa-tint"></i>
+                <span>皮肤数据</span>
+            </div>
+            <div class="nav-item" onclick="navigateTo('environmentData')">
+                <i class="fas fa-cloud-sun"></i>
+                <span>环境数据</span>
+            </div>
+            <div class="nav-item" onclick="navigateTo('statistics')">
+                <i class="fas fa-chart-line"></i>
+                <span>统计分析</span>
+            </div>
+            <div class="nav-item" onclick="navigateTo('reports')">
+                <i class="fas fa-file-medical"></i>
+                <span>健康报告</span>
+            </div>
+            <div class="nav-item" onclick="navigateTo('notifications')">
+                <i class="fas fa-bell"></i>
+                <span>通知中心</span>
+                <span class="badge bg-danger ms-2" id="notificationBadge" style="display: none;">0</span>
+            </div>
+            <div class="nav-item" onclick="handleLogout()">
+                <i class="fas fa-sign-out-alt"></i>
+                <span>退出登录</span>
+            </div>
+        </div>
+        
+        <!-- 主内容区 -->
+        <div class="main-content">
+            <!-- 顶部导航 -->
+            <nav class="navbar navbar-expand-lg navbar-light bg-white rounded shadow-sm mb-4">
+                <div class="container-fluid">
+                    <button class="btn btn-sm btn-outline-primary d-md-none" onclick="toggleSidebar()">
+                        <i class="fas fa-bars"></i>
+                    </button>
+                    <span class="navbar-text ms-auto">
+                        <i class="fas fa-user-circle me-2"></i>
+                        <span id="userName">用户</span>
+                    </span>
+                </div>
+            </nav>
+            
+            <!-- 页面内容 -->
+            <div id="pageContent">
+                <!-- 动态加载内容 -->
+            </div>
+        </div>
+    </div>
+    
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    
+    <script>
+        // ==================== 全局配置 ====================
+        const API_BASE_URL = 'http://47.103.108.47:5000/api/miniprogram';
+        let authToken = localStorage.getItem('authToken') || '';
+        let currentUser = null;
+        
+        // ==================== 工具函数 ====================
+        
+        // 显示Loading
+        function showLoading() {
+            document.getElementById('loadingOverlay').style.display = 'flex';
+        }
+        
+        // 隐藏Loading
+        function hideLoading() {
+            document.getElementById('loadingOverlay').style.display = 'none';
+        }
+        
+        // 显示Toast通知
+        function showToast(message, type = 'info') {
+            const toastContainer = document.getElementById('toastContainer');
+            const toastId = 'toast-' + Date.now();
+            
+            const bgClass = {
+                'success': 'bg-success',
+                'error': 'bg-danger',
+                'warning': 'bg-warning',
+                'info': 'bg-info'
+            }[type] || 'bg-info';
+            
+            const iconClass = {
+                'success': 'fa-check-circle',
+                'error': 'fa-exclamation-circle',
+                'warning': 'fa-exclamation-triangle',
+                'info': 'fa-info-circle'
+            }[type] || 'fa-info-circle';
+            
+            const toastHTML = `
+                <div id="${toastId}" class="toast align-items-center text-white ${bgClass} border-0" role="alert">
+                    <div class="d-flex">
+                        <div class="toast-body">
+                            <i class="fas ${iconClass} me-2"></i>${message}
+                        </div>
+                        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+                    </div>
+                </div>
+            `;
+            
+            toastContainer.insertAdjacentHTML('beforeend', toastHTML);
+            const toastElement = document.getElementById(toastId);
+            const toast = new bootstrap.Toast(toastElement, { delay: 3000 });
+            toast.show();
+            
+            // 自动移除
+            setTimeout(() => {
+                toastElement.remove();
+            }, 3500);
+        }
+        
+        // API请求封装
+        async function apiRequest(endpoint, options = {}) {
+            const url = `${API_BASE_URL}${endpoint}`;
+            const headers = {
+                'Content-Type': 'application/json',
+                ...options.headers
+            };
+            
+            // 添加认证Token
+            if (authToken) {
+                headers['Authorization'] = `Bearer ${authToken}`;
+            }
+            
+            try {
+                showLoading();
+                const response = await fetch(url, {
+                    ...options,
+                    headers
+                });
+                
+                const data = await response.json();
+                
+                // 处理401未授权
+                if (response.status === 401) {
+                    handleLogout();
+                    showToast('登录已过期，请重新登录', 'warning');
+                    return null;
+                }
+                
+                hideLoading();
+                return data;
+            } catch (error) {
+                hideLoading();
+                showToast(`网络错误: ${error.message}`, 'error');
+                console.error('API请求失败:', error);
+                return null;
+            }
+        }
+        
+        // ==================== 认证模块 ====================
+        
+        // 显示登录表单
+        function showLoginForm() {
+            document.getElementById('loginForm').style.display = 'block';
+            document.getElementById('registerForm').style.display = 'none';
+        }
+        
+        // 显示注册表单
+        function showRegisterForm() {
+            document.getElementById('loginForm').style.display = 'none';
+            document.getElementById('registerForm').style.display = 'block';
+        }
+        
+        // 处理登录
+        async function handleLogin() {
+            const username = document.getElementById('loginUsername').value.trim();
+            const password = document.getElementById('loginPassword').value.trim();
+            
+            if (!username || !password) {
+                showToast('请输入用户名和密码', 'warning');
+                return;
+            }
+            
+            const result = await apiRequest('/user/login', {
+                method: 'POST',
+                body: JSON.stringify({ username, password })
+            });
+            
+            if (result && result.success) {
+                // API直接返回token和user，不在data字段中
+                authToken = result.token;
+                currentUser = result.user;
+                localStorage.setItem('authToken', authToken);
+                localStorage.setItem('currentUser', JSON.stringify(currentUser));
+                
+                showToast('登录成功！', 'success');
+                showApp();
+            } else {
+                showToast(result?.message || '登录失败', 'error');
+            }
+        }
+        
+        // 处理注册
+        async function handleRegister() {
+            const username = document.getElementById('regUsername').value.trim();
+            const password = document.getElementById('regPassword').value.trim();
+            const phone = document.getElementById('regPhone').value.trim();
+            const nickname = document.getElementById('regNickname').value.trim();
+            
+            if (!username || !password || !phone) {
+                showToast('请填写必填字段', 'warning');
+                return;
+            }
+            
+            if (password.length < 6) {
+                showToast('密码长度至少6位', 'warning');
+                return;
+            }
+            
+            const result = await apiRequest('/user/register', {
+                method: 'POST',
+                body: JSON.stringify({ username, password, phone, nickname })
+            });
+            
+            if (result && result.success) {
+                showToast('注册成功！请登录', 'success');
+                showLoginForm();
+                // 清空表单
+                document.getElementById('regUsername').value = '';
+                document.getElementById('regPassword').value = '';
+                document.getElementById('regPhone').value = '';
+                document.getElementById('regNickname').value = '';
+            } else {
+                showToast(result?.message || '注册失败', 'error');
+            }
+        }
+        
+        // 处理登出
+        function handleLogout() {
+            authToken = '';
+            currentUser = null;
+            localStorage.removeItem('authToken');
+            localStorage.removeItem('currentUser');
+            
+            document.getElementById('loginPage').style.display = 'flex';
+            document.getElementById('appContainer').style.display = 'none';
+            
+            // 清空登录表单
+            document.getElementById('loginUsername').value = '';
+            document.getElementById('loginPassword').value = '';
+            
+            showToast('已退出登录', 'info');
+        }
+        
+        // 显示主应用
+        function showApp() {
+            document.getElementById('loginPage').style.display = 'none';
+            document.getElementById('appContainer').style.display = 'block';
+            
+            // 更新用户信息
+            if (currentUser) {
+                document.getElementById('userName').textContent = currentUser.nickname || currentUser.username;
+            }
+            
+            // 默认跳转到仪表板
+            navigateTo('dashboard');
+        }
+        
+        // ==================== 页面导航 ====================
+        
+        // 切换侧边栏（移动端）
+        function toggleSidebar() {
+            document.getElementById('sidebar').classList.toggle('show');
+        }
+        
+        // 导航到指定页面
+        function navigateTo(page) {
+            // 更新导航激活状态
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            event.target.closest('.nav-item')?.classList.add('active');
+            
+            // 加载对应页面
+            switch(page) {
+                case 'dashboard':
+                    loadDashboard();
+                    break;
+                case 'devices':
+                    loadDevices();
+                    break;
+                case 'skinData':
+                    loadSkinData();
+                    break;
+                case 'environmentData':
+                    loadEnvironmentPage();
+                    break;
+                case 'statistics':
+                    loadStatisticsPage();
+                    break;
+                case 'reports':
+                    loadReportsPage();
+                    break;
+                case 'notifications':
+                    loadNotificationsPage();
+                    break;
+            }
+            
+            // 移动端关闭侧边栏
+            if (window.innerWidth <= 768) {
+                document.getElementById('sidebar').classList.remove('show');
+            }
+        }
+        
+        // ==================== 页面加载函数 ====================
+        
+        // 加载仪表板页面 - 专业设计
+        async function loadDashboardPage() {
+            const content = `
+                <div class="mb-8">
+                    <h1 class="text-3xl font-bold text-gray-800 mb-2">仪表板</h1>
+                    <p class="text-gray-600">欢迎回来，${currentUser?.nickname || currentUser?.username || '用户'}</p>
+                </div>
+                
+                <!-- 统计卡片 -->
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                    <div class="stat-card primary">
+                        <div class="flex items-center justify-between mb-4">
+                            <div class="w-12 h-12 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center">
+                                <i class="fas fa-microchip text-white text-xl"></i>
+                            </div>
+                            <span class="text-green-500 text-sm font-semibold">+12%</span>
+                        </div>
+                        <div class="stat-value" id="deviceCount">-</div>
+                        <div class="stat-label">绑定设备</div>
+                    </div>
+                    
+                    <div class="stat-card success">
+                        <div class="flex items-center justify-between mb-4">
+                            <div class="w-12 h-12 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl flex items-center justify-center">
+                                <i class="fas fa-wifi text-white text-xl"></i>
+                            </div>
+                            <span class="text-green-500 text-sm font-semibold">98%</span>
+                        </div>
+                        <div class="stat-value" id="onlineCount">-</div>
+                        <div class="stat-label">在线设备</div>
+                    </div>
+                    
+                    <div class="stat-card info">
+                        <div class="flex items-center justify-between mb-4">
+                            <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-cyan-600 rounded-xl flex items-center justify-center">
+                                <i class="fas fa-database text-white text-xl"></i>
+                            </div>
+                            <span class="text-blue-500 text-sm font-semibold">今日</span>
+                        </div>
+                        <div class="stat-value" id="todayRecords">-</div>
+                        <div class="stat-label">今日数据</div>
+                    </div>
+                    
+                    <div class="stat-card warning">
+                        <div class="flex items-center justify-between mb-4">
+                            <div class="w-12 h-12 bg-gradient-to-br from-amber-500 to-orange-600 rounded-xl flex items-center justify-center">
+                                <i class="fas fa-bell text-white text-xl"></i>
+                            </div>
+                            <span class="badge badge-danger" id="notifBadge" style="display:none">0</span>
+                        </div>
+                        <div class="stat-value" id="unreadNotifications">-</div>
+                        <div class="stat-label">未读通知</div>
+                    </div>
+                </div>
+                
+                <!-- 快捷操作 -->
+                <div class="card mb-8">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="fas fa-bolt me-2 text-yellow-500"></i>快捷操作</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="flex flex-wrap gap-3">
+                            <button class="btn btn-primary" onclick="navigateTo('devices')">
+                                <i class="fas fa-plus"></i>
+                                <span>绑定设备</span>
+                            </button>
+                            <button class="btn btn-success" onclick="navigateTo('skinData')">
+                                <i class="fas fa-chart-bar"></i>
+                                <span>查看数据</span>
+                            </button>
+                            <button class="btn btn-info" onclick="navigateTo('reports')">
+                                <i class="fas fa-file-medical"></i>
+                                <span>健康报告</span>
+                            </button>
+                            <button class="btn" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: white;" onclick="navigateTo('environment')">
+                                <i class="fas fa-cloud-sun"></i>
+                                <span>环境监测</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 图表和动态 -->
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div class="lg:col-span-2">
+                        <div class="chart-container">
+                            <div class="flex items-center justify-between mb-6">
+                                <h5 class="text-lg font-semibold text-gray-800">
+                                    <i class="fas fa-chart-line me-2 text-indigo-500"></i>
+                                    最近7天皮肤数据趋势
+                                </h5>
+                                <select class="form-select" style="width: auto;">
+                                    <option>水分 & 油性</option>
+                                </select>
+                            </div>
+                            <canvas id="dashboardChart" height="100"></canvas>
+                        </div>
+                    </div>
+                    
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0"><i class="fas fa-clock me-2 text-blue-500"></i>最新动态</h5>
+                        </div>
+                        <div class="card-body" id="recentActivity" style="max-height: 400px; overflow-y: auto;">
+                            <div class="text-center py-8">
+                                <div class="spinner mx-auto mb-4"></div>
+                                <p class="text-gray-500">加载中...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            document.getElementById('pageContent').innerHTML = content;
+            
+            // 加载统计数据
+            loadDashboardStats();
+        }
+        
+        // 加载仪表板统计数据
+        async function loadDashboardStats() {
+            try {
+                // 获取设备列表
+                const devicesResult = await apiRequest('/device/list?page=1&per_page=100');
+                if (devicesResult && devicesResult.success) {
+                    const devices = devicesResult.devices || [];
+                    document.getElementById('deviceCount').textContent = devices.length;
+                    
+                    const onlineDevices = devices.filter(d => d.status === 'online');
+                    document.getElementById('onlineCount').textContent = onlineDevices.length;
+                }
+                
+                // 获取今日数据（从统计接口）
+                const today = new Date().toISOString().split('T')[0];
+                const statsResult = await apiRequest(`/data/statistics?start_date=${today}&end_date=${today}`);
+                if (statsResult && statsResult.success) {
+                    const statistics = statsResult.statistics || [];
+                    const todayRecords = statistics.reduce((sum, s) => sum + (s.total_records || 0), 0);
+                    document.getElementById('todayRecords').textContent = todayRecords.toLocaleString();
+                }
+                
+                // 获取未读通知
+                const notifResult = await apiRequest('/notification/list?is_read=false&page=1&per_page=1');
+                if (notifResult && notifResult.success) {
+                    const pagination = notifResult.pagination || {};
+                    const unreadCount = pagination.total || 0;
+                    document.getElementById('unreadNotifications').textContent = unreadCount;
+                    
+                    // 更新侧边栏徽章
+                    const badge = document.getElementById('notificationBadge');
+                    if (badge) {
+                        if (unreadCount > 0) {
+                            badge.textContent = unreadCount;
+                            badge.style.display = 'inline';
+                        } else {
+                            badge.style.display = 'none';
+                        }
+                    }
+                }
+                
+                // 加载最新动态
+                loadRecentActivity();
+                
+                // 加载图表数据
+                loadDashboardChart();
+            } catch (error) {
+                console.error('加载仪表板数据失败:', error);
+            }
+        }
+        
+        // 加载最新动态
+        async function loadRecentActivity() {
+            try {
+                const container = document.getElementById('recentActivity');
+                if (!container) return;
+                
+                // 获取最近的通知作为动态
+                const result = await apiRequest('/notification/list?page=1&per_page=5');
+                if (result && result.success) {
+                    const notifications = result.notifications || [];
+                    
+                    if (notifications.length === 0) {
+                        container.innerHTML = '<p class="text-muted">暂无动态</p>';
+                        return;
+                    }
+                    
+                    container.innerHTML = notifications.map(notif => `
+                        <div class="d-flex align-items-start mb-3 pb-3 border-bottom">
+                            <i class="fas fa-bell text-primary me-2 mt-1"></i>
+                            <div class="flex-grow-1">
+                                <div class="small fw-bold">${notif.title || '系统通知'}</div>
+                                <div class="small text-muted">${formatDateTime(notif.created_at)}</div>
+                            </div>
+                        </div>
+                    `).join('');
+                } else {
+                    container.innerHTML = '<p class="text-muted">加载失败</p>';
+                }
+            } catch (error) {
+                console.error('加载最新动态失败:', error);
+            }
+        }
+        
+        // 加载仪表板图表
+        async function loadDashboardChart() {
+            const skinResult = await apiRequest('/data/skin?days=7&page=1&per_page=100');
+            
+            if (skinResult && skinResult.success) {
+                // 兼容数组和对象两种格式
+                let items = [];
+                if (Array.isArray(skinResult.data)) {
+                    items = skinResult.data;
+                } else if (skinResult.data && typeof skinResult.data === 'object') {
+                    items = skinResult.data.items || [];
+                }
+                
+                // 按日期分组
+                const dateMap = {};
+                items.forEach(item => {
+                    const date = item.sensor_time?.substring(0, 10);
+                    if (date) {
+                        if (!dateMap[date]) {
+                            dateMap[date] = { moisture: [], oiliness: [] };
+                        }
+                        dateMap[date].moisture.push(item.moisture);
+                        dateMap[date].oiliness.push(item.oiliness);
+                    }
+                });
+                
+                const labels = Object.keys(dateMap).sort();
+                const moistureData = labels.map(date => {
+                    const values = dateMap[date].moisture;
+                    return values.length > 0 ? (values.reduce((a, b) => a + b, 0) / values.length).toFixed(1) : 0;
+                });
+                const oilinessData = labels.map(date => {
+                    const values = dateMap[date].oiliness;
+                    return values.length > 0 ? (values.reduce((a, b) => a + b, 0) / values.length).toFixed(1) : 0;
+                });
+                
+                // 创建图表
+                const ctx = document.getElementById('dashboardChart');
+                if (ctx && labels.length > 0) {
+                    new Chart(ctx, {
+                        type: 'line',
+                        data: {
+                            labels: labels,
+                            datasets: [{
+                                label: '平均水分',
+                                data: moistureData,
+                                borderColor: '#4e73df',
+                                backgroundColor: 'rgba(78, 115, 223, 0.1)',
+                                tension: 0.4
+                            }, {
+                                label: '平均油性',
+                                data: oilinessData,
+                                borderColor: '#1cc88a',
+                                backgroundColor: 'rgba(28, 200, 138, 0.1)',
+                                tension: 0.4
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            plugins: {
+                                legend: {
+                                    position: 'top'
+                                }
+                            },
+                            scales: {
+                                y: {
+                                    beginAtZero: false
+                                }
+                            }
+                        }
+                    });
+                }
+            }
+        }
+        
+        // 加载设备列表
+        async function loadDevices() {
+            const content = `
+                <h2 class="mb-4"><i class="fas fa-microchip me-2"></i>设备管理</h2>
+                
+                <div class="card mb-4">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">我的设备</h5>
+                        <button class="btn btn-primary btn-sm" onclick="showBindDeviceModal()">
+                            <i class="fas fa-plus me-2"></i>绑定设备
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>设备ID</th>
+                                        <th>设备名称</th>
+                                        <th>类型</th>
+                                        <th>状态</th>
+                                        <th>电量</th>
+                                        <th>信号强度</th>
+                                        <th>位置</th>
+                                        <th>最后心跳</th>
+                                        <th>操作</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="deviceTableBody">
+                                    <tr>
+                                        <td colspan="9" class="text-center">
+                                            <div class="spinner-border text-primary" role="status">
+                                                <span class="visually-hidden">加载中...</span>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            document.getElementById('pageContent').innerHTML = content;
+            
+            // 加载设备数据
+            loadDeviceList();
+        }
+        
+        // 加载设备列表数据
+        async function loadDeviceList() {
+            const result = await apiRequest('/device/list?page=1&per_page=50');
+            
+            if (result && result.success) {
+                // 设备列表接口返回的是 devices 字段，不是 data.items
+                const devices = result.devices || [];
+                const tbody = document.getElementById('deviceTableBody');
+                
+                if (devices.length === 0) {
+                    tbody.innerHTML = `
+                        <tr>
+                            <td colspan="9" class="text-center text-muted py-4">
+                                <i class="fas fa-inbox fa-3x mb-3"></i>
+                                <p>暂无设备，请点击"绑定设备"添加</p>
+                            </td>
+                        </tr>
+                    `;
+                    return;
+                }
+                
+                tbody.innerHTML = devices.map(device => `
+                    <tr>
+                        <td><code>${device.device_id}</code></td>
+                        <td>${device.device_name || '-'}</td>
+                        <td>${device.device_type || '-'}</td>
+                        <td>
+                            <span class="badge ${device.status === 'online' ? 'badge-online' : 'badge-offline'}">
+                                ${device.status === 'online' ? '在线' : '离线'}
+                            </span>
+                        </td>
+                        <td>
+                            ${device.battery_level ? device.battery_level + '%' : '-'}
+                        </td>
+                        <td>
+                            ${device.signal_strength ? device.signal_strength + ' dBm' : '-'}
+                        </td>
+                        <td>${device.location || '-'}</td>
+                        <td>${formatDateTime(device.last_heartbeat)}</td>
+                        <td>
+                            <button class="btn btn-sm btn-info" onclick="viewDeviceStatus('${device.device_id}')">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `).join('');
+            } else {
+                document.getElementById('deviceTableBody').innerHTML = `
+                    <tr>
+                        <td colspan="9" class="text-center text-danger">
+                            加载失败：${result?.message || '未知错误'}
+                        </td>
+                    </tr>
+                `;
+            }
+        }
+        
+        // 显示绑定设备模态框
+        function showBindDeviceModal() {
+            const modalHTML = `
+                <div class="modal fade" id="bindDeviceModal" tabindex="-1">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title">绑定新设备</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                            </div>
+                            <div class="modal-body">
+                                <div class="mb-3">
+                                    <label class="form-label">设备ID *</label>
+                                    <input type="text" class="form-control" id="bindDeviceId" placeholder="例如: DEV_001">
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">设备名称</label>
+                                    <input type="text" class="form-control" id="bindDeviceName" placeholder="例如: 我的皮肤检测仪">
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">使用位置</label>
+                                    <input type="text" class="form-control" id="bindLocation" placeholder="例如: 家中">
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                                <button type="button" class="btn btn-primary" onclick="submitBindDevice()">确认绑定</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            document.body.insertAdjacentHTML('beforeend', modalHTML);
+            const modal = new bootstrap.Modal(document.getElementById('bindDeviceModal'));
+            modal.show();
+            
+            // 模态框关闭时移除DOM
+            document.getElementById('bindDeviceModal').addEventListener('hidden.bs.modal', function () {
+                this.remove();
+            });
+        }
+        
+        // 提交绑定设备
+        async function submitBindDevice() {
+            const device_id = document.getElementById('bindDeviceId').value.trim();
+            const device_name = document.getElementById('bindDeviceName').value.trim();
+            const location = document.getElementById('bindLocation').value.trim();
+            
+            if (!device_id) {
+                showToast('请输入设备ID', 'warning');
+                return;
+            }
+            
+            const result = await apiRequest('/device/bind', {
+                method: 'POST',
+                body: JSON.stringify({ device_id, device_name, location })
+            });
+            
+            if (result && result.success) {
+                showToast('设备绑定成功！', 'success');
+                bootstrap.Modal.getInstance(document.getElementById('bindDeviceModal')).hide();
+                loadDeviceList(); // 刷新列表
+            } else {
+                showToast(result?.message || '绑定失败', 'error');
+            }
+        }
+        
+        // 查看设备状态
+        async function viewDeviceStatus(deviceId) {
+            showLoading();
+            const result = await apiRequest(`/device/status/${deviceId}`);
+            hideLoading();
+            
+            if (result && result.success) {
+                const device = result.data;
+                const statusHTML = `
+                    <div class="modal fade" id="deviceStatusModal" tabindex="-1">
+                        <div class="modal-dialog">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title">设备状态详情</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <table class="table">
+                                        <tr>
+                                            <th width="40%">设备ID</th>
+                                            <td><code>${device.device_id}</code></td>
+                                        </tr>
+                                        <tr>
+                                            <th>设备名称</th>
+                                            <td>${device.device_name || '-'}</td>
+                                        </tr>
+                                        <tr>
+                                            <th>状态</th>
+                                            <td>
+                                                <span class="badge ${device.status === 'online' ? 'badge-online' : 'badge-offline'}">
+                                                    ${device.status === 'online' ? '在线' : '离线'}
+                                                </span>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <th>电量</th>
+                                            <td>${device.battery_level ? device.battery_level + '%' : '-'}</td>
+                                        </tr>
+                                        <tr>
+                                            <th>信号强度</th>
+                                            <td>${device.signal_strength ? device.signal_strength + ' dBm' : '-'}</td>
+                                        </tr>
+                                        <tr>
+                                            <th>固件版本</th>
+                                            <td>${device.firmware_version || '-'}</td>
+                                        </tr>
+                                        <tr>
+                                            <th>安装日期</th>
+                                            <td>${formatDate(device.install_date)}</td>
+                                        </tr>
+                                        <tr>
+                                            <th>最后心跳</th>
+                                            <td>${formatDateTime(device.last_heartbeat)}</td>
+                                        </tr>
+                                        <tr>
+                                            <th>位置</th>
+                                            <td>${device.location || '-'}</td>
+                                        </tr>
+                                    </table>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                document.body.insertAdjacentHTML('beforeend', statusHTML);
+                const modal = new bootstrap.Modal(document.getElementById('deviceStatusModal'));
+                modal.show();
+                
+                document.getElementById('deviceStatusModal').addEventListener('hidden.bs.modal', function () {
+                    this.remove();
+                });
+            } else {
+                showToast(result?.message || '查询失败', 'error');
+            }
+        }
+        
+        // 加载皮肤数据
+        async function loadSkinData() {
+            const content = `
+                <h2 class="mb-4"><i class="fas fa-tint me-2"></i>皮肤数据</h2>
+                
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">查询条件</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-3 mb-3">
+                                <label class="form-label">时间范围</label>
+                                <select class="form-select" id="skinTimeRange" onchange="loadSkinDataTable()">
+                                    <option value="7">最近7天</option>
+                                    <option value="30">最近30天</option>
+                                    <option value="90">最近90天</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <label class="form-label">每页数量</label>
+                                <select class="form-select" id="skinPerPage" onchange="loadSkinDataTable()">
+                                    <option value="10">10条</option>
+                                    <option value="20" selected>20条</option>
+                                    <option value="50">50条</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6 mb-3 d-flex align-items-end">
+                                <button class="btn btn-primary me-2" onclick="loadSkinDataTable()">
+                                    <i class="fas fa-search me-2"></i>查询
+                                </button>
+                                <button class="btn btn-success" onclick="exportSkinData()">
+                                    <i class="fas fa-download me-2"></i>导出
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="data-table">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>设备ID</th>
+                                    <th>水分</th>
+                                    <th>油性</th>
+                                    <th>温度</th>
+                                    <th>检测时间</th>
+                                    <th>接收时间</th>
+                                </tr>
+                            </thead>
+                            <tbody id="skinDataTableBody">
+                                <tr>
+                                    <td colspan="7" class="text-center">
+                                        <div class="spinner-border text-primary" role="status">
+                                            <span class="visually-hidden">加载中...</span>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <nav class="mt-3">
+                    <ul class="pagination justify-content-center" id="skinPagination"></ul>
+                </nav>
+            `;
+            
+            document.getElementById('pageContent').innerHTML = content;
+            loadSkinDataTable(1);
+        }
+        
+        // 加载皮肤数据表格
+        async function loadSkinDataTable(page = 1) {
+            const days = document.getElementById('skinTimeRange')?.value || 7;
+            const perPage = document.getElementById('skinPerPage')?.value || 20;
+            
+            const result = await apiRequest(`/data/skin?days=${days}&page=${page}&per_page=${perPage}`);
+            
+            if (result && result.success) {
+                // API返回格式：{success, data: [...], pagination: {...}}
+                // data可能是数组或对象
+                let items = [];
+                let pagination = {};
+                
+                if (Array.isArray(result.data)) {
+                    // data是数组
+                    items = result.data;
+                    pagination = result.pagination || { total: items.length, pages: 1 };
+                } else if (result.data && typeof result.data === 'object') {
+                    // data是对象，包含items
+                    items = result.data.items || [];
+                    pagination = result.pagination || result.data.pagination || {};
+                }
+                
+                const tbody = document.getElementById('skinDataTableBody');
+                
+                if (items.length === 0) {
+                    tbody.innerHTML = `
+                        <tr>
+                            <td colspan="7" class="text-center text-muted py-4">
+                                <i class="fas fa-inbox fa-3x mb-3"></i>
+                                <p>暂无数据</p>
+                            </td>
+                        </tr>
+                    `;
+                    return;
+                }
+                
+                tbody.innerHTML = items.map(item => `
+                    <tr>
+                        <td>${item.id}</td>
+                        <td><code>${item.device_id}</code></td>
+                        <td>${item.moisture?.toFixed ? item.moisture.toFixed(1) : item.moisture || '-'}</td>
+                        <td>${item.oiliness?.toFixed ? item.oiliness.toFixed(1) : item.oiliness || '-'}</td>
+                        <td>${item.temperature?.toFixed ? item.temperature.toFixed(1) : item.temperature || '-'}</td>
+                        <td>${formatDateTime(item.sensor_time)}</td>
+                        <td>${formatDateTime(item.received_at)}</td>
+                    </tr>
+                `).join('');
+                
+                // 更新分页
+                updatePagination('skinPagination', page, pagination.pages || 1, loadSkinDataTable);
+            } else {
+                document.getElementById('skinDataTableBody').innerHTML = `
+                    <tr>
+                        <td colspan="7" class="text-center text-danger">
+                            加载失败：${result?.message || '未知错误'}
+                        </td>
+                    </tr>
+                `;
+            }
+        }
+        
+        // 加载环境数据页面
+        async function loadEnvironmentPage() {
+            const content = `
+                <h2 class="mb-4"><i class="fas fa-cloud-sun me-2"></i>环境数据监测</h2>
+                
+                <!-- 筛选条件 -->
+                <div class="card mb-4 shadow-sm">
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-md-3">
+                                <label class="form-label">时间范围</label>
+                                <select class="form-select" id="envTimeRange">
+                                    <option value="7">最近7天</option>
+                                    <option value="30" selected>最近30天</option>
+                                    <option value="90">最近90天</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">设备选择</label>
+                                <select class="form-select" id="envDeviceSelect">
+                                    <option value="">全部设备</option>
+                                </select>
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label">每页数量</label>
+                                <select class="form-select" id="envPerPage">
+                                    <option value="10">10条</option>
+                                    <option value="20" selected>20条</option>
+                                    <option value="50">50条</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4 d-flex align-items-end">
+                                <button class="btn btn-primary me-2" onclick="loadEnvDataTable(1)">
+                                    <i class="fas fa-search me-1"></i>查询
+                                </button>
+                                <button class="btn btn-success" onclick="exportEnvData()">
+                                    <i class="fas fa-download me-1"></i>导出
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 数据表格 -->
+                <div class="card shadow-sm">
+                    <div class="card-header bg-white py-3">
+                        <h5 class="mb-0"><i class="fas fa-table me-2"></i>环境监测记录</h5>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>设备ID</th>
+                                        <th>温度(°C)</th>
+                                        <th>湿度(%)</th>
+                                        <th>PM2.5</th>
+                                        <th>CO2(ppm)</th>
+                                        <th>检测时间</th>
+                                        <th>接收时间</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="envDataTableBody">
+                                    <tr>
+                                        <td colspan="8" class="text-center py-5">
+                                            <div class="spinner-border text-primary" role="status">
+                                                <span class="visually-hidden">加载中...</span>
+                                            </div>
+                                            <p class="mt-3 text-muted">正在加载数据...</p>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="card-footer bg-white">
+                        <nav>
+                            <ul class="pagination justify-content-center mb-0" id="envPagination"></ul>
+                        </nav>
+                    </div>
+                </div>
+            `;
+            
+            document.getElementById('pageContent').innerHTML = content;
+            loadEnvDevices();
+            loadEnvDataTable(1);
+        }
+        
+        // 加载环境设备列表
+        async function loadEnvDevices() {
+            try {
+                const result = await apiRequest('/device/list');
+                if (result && result.success) {
+                    const devices = result.devices || [];
+                    const select = document.getElementById('envDeviceSelect');
+                    devices.forEach(device => {
+                        const option = document.createElement('option');
+                        option.value = device.device_id;
+                        option.textContent = `${device.device_id} (${device.location || '未知'})`;
+                        select.appendChild(option);
+                    });
+                }
+            } catch (error) {
+                console.error('加载设备列表失败:', error);
+            }
+        }
+        
+        // 加载环境数据表格
+        async function loadEnvDataTable(page = 1) {
+            const days = document.getElementById('envTimeRange')?.value || 30;
+            const deviceId = document.getElementById('envDeviceSelect')?.value || '';
+            const perPage = document.getElementById('envPerPage')?.value || 20;
+            
+            let url = `/data/environment?days=${days}&page=${page}&per_page=${perPage}`;
+            if (deviceId) {
+                url += `&device_id=${deviceId}`;
+            }
+            
+            const result = await apiRequest(url);
+            
+            if (result && result.success) {
+                let items = [];
+                if (Array.isArray(result.data)) {
+                    items = result.data;
+                } else if (result.data && typeof result.data === 'object') {
+                    items = result.data.items || [];
+                }
+                
+                const tbody = document.getElementById('envDataTableBody');
+                
+                if (items.length === 0) {
+                    tbody.innerHTML = `
+                        <tr>
+                            <td colspan="8" class="text-center text-muted py-5">
+                                <i class="fas fa-inbox fa-3x mb-3 text-gray-300"></i>
+                                <p>暂无环境数据</p>
+                            </td>
+                        </tr>
+                    `;
+                    return;
+                }
+                
+                tbody.innerHTML = items.map(item => `
+                    <tr>
+                        <td>${item.id}</td>
+                        <td><code>${item.device_id}</code></td>
+                        <td><span class="badge bg-info">${item.temperature?.toFixed(1) || '-'}</span></td>
+                        <td><span class="badge bg-success">${item.humidity?.toFixed(1) || '-'}</span></td>
+                        <td><span class="badge ${getPM25BadgeClass(item.pm25)}">${item.pm25 || '-'}</span></td>
+                        <td><span class="badge bg-warning text-dark">${item.co2 || '-'}</span></td>
+                        <td>${formatDateTime(item.sensor_time)}</td>
+                        <td>${formatDateTime(item.received_at)}</td>
+                    </tr>
+                `).join('');
+                
+                updatePagination('envPagination', page, result.pagination?.pages || 1, loadEnvDataTable);
+            } else {
+                document.getElementById('envDataTableBody').innerHTML = `
+                    <tr>
+                        <td colspan="8" class="text-center text-danger">
+                            加载失败：${result?.message || '未知错误'}
+                        </td>
+                    </tr>
+                `;
+            }
+        }
+        
+        // 获取PM2.5徽章样式
+        function getPM25BadgeClass(pm25) {
+            if (!pm25) return 'bg-secondary';
+            if (pm25 <= 35) return 'bg-success';
+            if (pm25 <= 75) return 'bg-warning text-dark';
+            return 'bg-danger';
+        }
+        
+        // 导出环境数据
+        function exportEnvData() {
+            showToast('导出功能开发中...', 'info');
+        }
+        
+        // 加载统计分析页面
+        async function loadStatisticsPage() {
+            const content = `
+                <h2 class="mb-4"><i class="fas fa-chart-line me-2"></i>统计分析</h2>
+                
+                <!-- 统计卡片 -->
+                <div class="row g-4 mb-4">
+                    <div class="col-md-3">
+                        <div class="card border-0 shadow-sm h-100">
+                            <div class="card-body text-center">
+                                <i class="fas fa-database fa-3x text-primary mb-3"></i>
+                                <h3 class="mb-1" id="statTotalRecords">-</h3>
+                                <p class="text-muted mb-0">总数据量</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card border-0 shadow-sm h-100">
+                            <div class="card-body text-center">
+                                <i class="fas fa-calendar-alt fa-3x text-success mb-3"></i>
+                                <h3 class="mb-1" id="statDays">-</h3>
+                                <p class="text-muted mb-0">监测天数</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card border-0 shadow-sm h-100">
+                            <div class="card-body text-center">
+                                <i class="fas fa-tint fa-3x text-info mb-3"></i>
+                                <h3 class="mb-1" id="statAvgMoisture">-</h3>
+                                <p class="text-muted mb-0">平均水分</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card border-0 shadow-sm h-100">
+                            <div class="card-body text-center">
+                                <i class="fas fa-oil-can fa-3x text-warning mb-3"></i>
+                                <h3 class="mb-1" id="statAvgOiliness">-</h3>
+                                <p class="text-muted mb-0">平均油性</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 趋势图表 -->
+                <div class="card shadow-sm mb-4">
+                    <div class="card-header bg-white py-3">
+                        <h5 class="mb-0"><i class="fas fa-chart-area me-2"></i>数据趋势分析</h5>
+                    </div>
+                    <div class="card-body">
+                        <canvas id="statisticsChart" height="100"></canvas>
+                    </div>
+                </div>
+                
+                <!-- 详细统计表格 -->
+                <div class="card shadow-sm">
+                    <div class="card-header bg-white py-3">
+                        <h5 class="mb-0"><i class="fas fa-list me-2"></i>每日统计明细</h5>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>日期</th>
+                                        <th>数据量</th>
+                                        <th>平均水分</th>
+                                        <th>平均油性</th>
+                                        <th>最高温度</th>
+                                        <th>最低温度</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="statisticsTableBody">
+                                    <tr>
+                                        <td colspan="6" class="text-center py-5">
+                                            <div class="spinner-border text-primary" role="status">
+                                                <span class="visually-hidden">加载中...</span>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            document.getElementById('pageContent').innerHTML = content;
+            loadStatisticsData();
+        }
+        
+        // 加载统计数据
+        async function loadStatisticsData() {
+            try {
+                const result = await apiRequest('/data/statistics?days=30');
+                
+                if (result && result.success) {
+                    const statistics = result.statistics || [];
+                    
+                    // 更新统计卡片
+                    const totalRecords = statistics.reduce((sum, s) => sum + (s.total_records || 0), 0);
+                    document.getElementById('statTotalRecords').textContent = totalRecords.toLocaleString();
+                    document.getElementById('statDays').textContent = statistics.length;
+                    
+                    if (statistics.length > 0) {
+                        const avgMoisture = statistics.reduce((sum, s) => sum + (s.avg_moisture || 0), 0) / statistics.length;
+                        const avgOiliness = statistics.reduce((sum, s) => sum + (s.avg_oiliness || 0), 0) / statistics.length;
+                        document.getElementById('statAvgMoisture').textContent = avgMoisture.toFixed(1) + '%';
+                        document.getElementById('statAvgOiliness').textContent = avgOiliness.toFixed(1) + '%';
+                        
+                        // 绘制趋势图
+                        drawStatisticsChart(statistics);
+                    }
+                    
+                    // 填充表格
+                    const tbody = document.getElementById('statisticsTableBody');
+                    if (statistics.length === 0) {
+                        tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-4">暂无统计数据</td></tr>';
+                    } else {
+                        tbody.innerHTML = statistics.slice(0, 30).map(stat => `
+                            <tr>
+                                <td>${formatDate(stat.stat_date)}</td>
+                                <td>${stat.total_records || 0}</td>
+                                <td>${(stat.avg_moisture || 0).toFixed(1)}%</td>
+                                <td>${(stat.avg_oiliness || 0).toFixed(1)}%</td>
+                                <td>${(stat.max_temperature || 0).toFixed(1)}°C</td>
+                                <td>${(stat.min_temperature || 0).toFixed(1)}°C</td>
+                            </tr>
+                        `).join('');
+                    }
+                }
+            } catch (error) {
+                console.error('加载统计数据失败:', error);
+            }
+        }
+        
+        // 绘制统计图表
+        function drawStatisticsChart(statistics) {
+            const ctx = document.getElementById('statisticsChart');
+            if (!ctx) return;
+            
+            const labels = statistics.map(s => formatDate(s.stat_date)).reverse();
+            const moistureData = statistics.map(s => s.avg_moisture || 0).reverse();
+            const oilinessData = statistics.map(s => s.avg_oiliness || 0).reverse();
+            
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: '平均水分',
+                        data: moistureData,
+                        borderColor: '#4e73df',
+                        backgroundColor: 'rgba(78, 115, 223, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    }, {
+                        label: '平均油性',
+                        data: oilinessData,
+                        borderColor: '#1cc88a',
+                        backgroundColor: 'rgba(28, 200, 138, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: { position: 'top' }
+                    },
+                    scales: {
+                        y: { beginAtZero: false }
+                    }
+                }
+            });
+        }
+        
+        // 加载健康报告页面
+        async function loadReportsPage() {
+            const content = `
+                <h2 class="mb-4"><i class="fas fa-file-medical me-2"></i>健康报告</h2>
+                
+                <!-- 报告类型筛选 -->
+                <div class="card mb-4 shadow-sm">
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <label class="form-label">报告类型</label>
+                                <select class="form-select" id="reportTypeFilter">
+                                    <option value="">全部类型</option>
+                                    <option value="daily">日报</option>
+                                    <option value="weekly">周报</option>
+                                    <option value="monthly">月报</option>
+                                </select>
+                            </div>
+                            <div class="col-md-2 d-flex align-items-end">
+                                <button class="btn btn-primary w-100" onclick="loadReportList()">
+                                    <i class="fas fa-filter me-1"></i>筛选
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 报告列表 -->
+                <div class="row g-4" id="reportListContainer">
+                    <div class="col-12 text-center py-5">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">加载中...</span>
+                        </div>
+                        <p class="mt-3 text-muted">正在加载报告...</p>
+                    </div>
+                </div>
+            `;
+            
+            document.getElementById('pageContent').innerHTML = content;
+            loadReportList();
+        }
+        
+        // 加载报告列表
+        async function loadReportList() {
+            const reportType = document.getElementById('reportTypeFilter')?.value || '';
+            let url = '/report/list';
+            if (reportType) {
+                url += `?type=${reportType}`;
+            }
+            
+            const result = await apiRequest(url);
+            
+            if (result && result.success) {
+                const reports = result.reports || [];
+                const container = document.getElementById('reportListContainer');
+                
+                if (reports.length === 0) {
+                    container.innerHTML = `
+                        <div class="col-12 text-center py-5">
+                            <i class="fas fa-inbox fa-4x text-gray-300 mb-3"></i>
+                            <p class="text-muted">暂无健康报告</p>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                container.innerHTML = reports.map(report => {
+                    const typeLabels = { daily: '日报', weekly: '周报', monthly: '月报' };
+                    const typeColors = { daily: 'primary', weekly: 'success', monthly: 'info' };
+                    const scoreColor = report.score >= 80 ? 'success' : report.score >= 60 ? 'warning' : 'danger';
+                    
+                    return `
+                        <div class="col-md-6 col-lg-4">
+                            <div class="card h-100 shadow-sm hover-shadow transition-all">
+                                <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                                    <span class="badge bg-${typeColors[report.report_type] || 'secondary'}">
+                                        ${typeLabels[report.report_type] || '报告'}
+                                    </span>
+                                    <small class="text-muted">${formatDate(report.report_date)}</small>
+                                </div>
+                                <div class="card-body">
+                                    <h5 class="card-title mb-3">${report.title || '健康报告'}</h5>
+                                    <div class="d-flex justify-content-between align-items-center mb-3">
+                                        <span class="text-muted">综合评分</span>
+                                        <span class="badge bg-${scoreColor} fs-5">${report.score || 0}分</span>
+                                    </div>
+                                    <p class="card-text text-muted small mb-3">
+                                        ${report.summary || '暂无摘要'}
+                                    </p>
+                                    <button class="btn btn-outline-primary btn-sm w-100" onclick="viewReportDetail(${report.id})">
+                                        <i class="fas fa-eye me-1"></i>查看详情
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            }
+        }
+        
+        // 查看报告详情
+        async function viewReportDetail(reportId) {
+            try {
+                const result = await apiRequest(`/report/detail/${reportId}`);
+                
+                if (result && result.success) {
+                    const report = result.report;
+                    alert(`报告详情：\n\n标题：${report.title}\n日期：${formatDate(report.report_date)}\n评分：${report.score}分\n\n摘要：${report.summary}\n\n建议：${report.suggestions || '暂无建议'}`);
+                }
+            } catch (error) {
+                showToast('加载报告详情失败', 'danger');
+            }
+        }
+        
+        // 加载通知中心页面
+        async function loadNotificationsPage() {
+            const content = `
+                <h2 class="mb-4"><i class="fas fa-bell me-2"></i>通知中心</h2>
+                
+                <!-- 筛选条件 -->
+                <div class="card mb-4 shadow-sm">
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-md-3">
+                                <label class="form-label">通知类型</label>
+                                <select class="form-select" id="notifTypeFilter">
+                                    <option value="">全部类型</option>
+                                    <option value="system">系统通知</option>
+                                    <option value="device">设备提醒</option>
+                                    <option value="report">报告生成</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">阅读状态</label>
+                                <select class="form-select" id="notifReadFilter">
+                                    <option value="">全部</option>
+                                    <option value="false">未读</option>
+                                    <option value="true">已读</option>
+                                </select>
+                            </div>
+                            <div class="col-md-2 d-flex align-items-end">
+                                <button class="btn btn-primary w-100" onclick="loadNotificationList()">
+                                    <i class="fas fa-search me-1"></i>查询
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 通知列表 -->
+                <div class="card shadow-sm">
+                    <div class="card-body p-0">
+                        <div id="notificationListContainer">
+                            <div class="text-center py-5">
+                                <div class="spinner-border text-primary" role="status">
+                                    <span class="visually-hidden">加载中...</span>
+                                </div>
+                                <p class="mt-3 text-muted">正在加载通知...</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-footer bg-white">
+                        <nav>
+                            <ul class="pagination justify-content-center mb-0" id="notifPagination"></ul>
+                        </nav>
+                    </div>
+                </div>
+            `;
+            
+            document.getElementById('pageContent').innerHTML = content;
+            loadNotificationList();
+        }
+        
+        // 加载通知列表
+        async function loadNotificationList(page = 1) {
+            const type = document.getElementById('notifTypeFilter')?.value || '';
+            const isRead = document.getElementById('notifReadFilter')?.value;
+            
+            let url = `/notification/list?page=${page}&per_page=20`;
+            if (type) url += `&type=${type}`;
+            if (isRead !== '') url += `&is_read=${isRead}`;
+            
+            const result = await apiRequest(url);
+            
+            if (result && result.success) {
+                const notifications = result.notifications || [];
+                const container = document.getElementById('notificationListContainer');
+                
+                if (notifications.length === 0) {
+                    container.innerHTML = `
+                        <div class="text-center py-5">
+                            <i class="fas fa-bell-slash fa-4x text-gray-300 mb-3"></i>
+                            <p class="text-muted">暂无通知</p>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                container.innerHTML = notifications.map(notif => {
+                    const typeIcons = {
+                        system: 'fa-cog text-primary',
+                        device: 'fa-microchip text-success',
+                        report: 'fa-file-alt text-info',
+                        warning: 'fa-exclamation-triangle text-warning'
+                    };
+                    const iconClass = typeIcons[notif.type] || 'fa-bell text-secondary';
+                    
+                    return `
+                        <div class="list-group-item list-group-item-action ${!notif.is_read ? 'bg-light' : ''}">
+                            <div class="d-flex w-100 justify-content-between align-items-start">
+                                <div class="d-flex align-items-start">
+                                    <i class="fas ${iconClass} fa-lg me-3 mt-1"></i>
+                                    <div>
+                                        <h6 class="mb-1 ${!notif.is_read ? 'fw-bold' : ''}">${notif.title || '通知'}</h6>
+                                        <p class="mb-1 text-muted small">${notif.content || ''}</p>
+                                        <small class="text-muted">${formatDateTime(notif.created_at)}</small>
+                                    </div>
+                                </div>
+                                <div>
+                                    ${!notif.is_read ? `<span class="badge bg-danger">未读</span>` : ''}
+                                    ${!notif.is_read ? `
+                                        <button class="btn btn-sm btn-outline-primary ms-2" onclick="markNotifRead(${notif.id})">
+                                            标记已读
+                                        </button>
+                                    ` : ''}
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+                
+                updatePagination('notifPagination', page, result.pagination?.pages || 1, loadNotificationList);
+            }
+        }
+        
+        // 标记通知已读
+        async function markNotifRead(notifId) {
+            try {
+                const result = await apiRequest(`/notification/read/${notifId}`, { method: 'PUT' });
+                if (result && result.success) {
+                    showToast('已标记为已读', 'success');
+                    loadNotificationList();
+                }
+            } catch (error) {
+                showToast('操作失败', 'danger');
+            }
+        }
+        
+        // ==================== 辅助函数 ====================
+        
+        // 格式化日期时间
+        function formatDateTime(datetime) {
+            if (!datetime) return '-';
+            return datetime.replace('T', ' ').substring(0, 19);
+        }
+        
+        // 格式化日期
+        function formatDate(date) {
+            if (!date) return '-';
+            return date.substring(0, 10);
+        }
+        
+        // 更新分页
+        function updatePagination(paginationId, currentPage, totalPages, callback) {
+            const pagination = document.getElementById(paginationId);
+            if (!pagination) return;
+            
+            let html = '';
+            
+            // 上一页
+            html += `
+                <li class="page-item ${currentPage === 1 ? 'disabled' : ''}">
+                    <a class="page-link" href="#" onclick="${callback.name}(${currentPage - 1}); return false;">
+                        <i class="fas fa-chevron-left"></i>
+                    </a>
+                </li>
+            `;
+            
+            // 页码
+            for (let i = 1; i <= totalPages; i++) {
+                if (i === 1 || i === totalPages || (i >= currentPage - 2 && i <= currentPage + 2)) {
+                    html += `
+                        <li class="page-item ${i === currentPage ? 'active' : ''}">
+                            <a class="page-link" href="#" onclick="${callback.name}(${i}); return false;">${i}</a>
+                        </li>
+                    `;
+                } else if (i === currentPage - 3 || i === currentPage + 3) {
+                    html += '<li class="page-item disabled"><span class="page-link">...</span></li>';
+                }
+            }
+            
+            // 下一页
+            html += `
+                <li class="page-item ${currentPage === totalPages ? 'disabled' : ''}">
+                    <a class="page-link" href="#" onclick="${callback.name}(${currentPage + 1}); return false;">
+                        <i class="fas fa-chevron-right"></i>
+                    </a>
+                </li>
+            `;
+            
+            pagination.innerHTML = html;
+        }
+        
+        // 导出皮肤数据
+        function exportSkinData() {
+            showToast('导出功能开发中...', 'info');
+        }
+        
+        // ==================== 初始化 ====================
+        
+        // 页面加载完成后执行
+        window.addEventListener('DOMContentLoaded', function() {
+            // 检查是否已登录
+            if (authToken) {
+                const savedUser = localStorage.getItem('currentUser');
+                if (savedUser) {
+                    currentUser = JSON.parse(savedUser);
+                    showApp();
+                } else {
+                    handleLogout();
+                }
+            }
+        });
+    </script>
+</body>
+</html>
