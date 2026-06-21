@@ -1,0 +1,48 @@
+<view class="detail-container" wx:if="{{report}}">
+  <view class="hero">
+    <text class="title">{{report.title}}</text>
+    <text class="time">{{report.generate_time}}</text>
+    <view class="score-box">
+      <text class="score">{{report.score || '--'}}</text>
+      <text class="score-label">健康评分</text>
+    </view>
+  </view>
+
+  <view class="section">
+    <view class="section-title">报告摘要</view>
+    <text class="summary">{{report.summary || '暂无摘要'}}</text>
+  </view>
+
+  <view wx:if="{{report.details.moisture_analysis}}" class="section">
+    <view class="section-title">水分分析</view>
+    <view class="analysis-row">
+      <text>平均值</text>
+      <text>{{report.details.moisture_analysis.average || '--'}}</text>
+    </view>
+    <view class="analysis-row">
+      <text>趋势</text>
+      <text>{{report.details.moisture_analysis.trend || '--'}}</text>
+    </view>
+    <text class="summary">{{report.details.moisture_analysis.evaluation || ''}}</text>
+  </view>
+
+  <view wx:if="{{report.details.oiliness_analysis}}" class="section">
+    <view class="section-title">油脂分析</view>
+    <view class="analysis-row">
+      <text>平均值</text>
+      <text>{{report.details.oiliness_analysis.average || '--'}}</text>
+    </view>
+    <view class="analysis-row">
+      <text>趋势</text>
+      <text>{{report.details.oiliness_analysis.trend || '--'}}</text>
+    </view>
+    <text class="summary">{{report.details.oiliness_analysis.evaluation || ''}}</text>
+  </view>
+
+  <view wx:if="{{recommendations.length > 0}}" class="section">
+    <view class="section-title">护理建议</view>
+    <view wx:for="{{recommendations}}" wx:key="index" class="recommendation">{{index + 1}}. {{item}}</view>
+  </view>
+</view>
+
+<view wx:else class="empty-state">报告加载中...</view>

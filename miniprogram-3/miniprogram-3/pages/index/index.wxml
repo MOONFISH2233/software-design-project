@@ -1,0 +1,106 @@
+<!--index.wxml - 数据看板页面-->
+<view class="dashboard-container">
+  <!-- 顶部欢迎栏 -->
+  <view class="header">
+    <text class="title">智能化妆镜</text>
+    <text class="subtitle">实时监测您的肌肤状态</text>
+  </view>
+
+  <!-- 统计卡片 -->
+  <view class="stats-grid">
+    <view class="stat-card" bindtap="goToDevices">
+      <view class="stat-icon">📱</view>
+      <text class="stat-value">{{statistics.totalDevices}}</text>
+      <text class="stat-label">设备数量</text>
+    </view>
+    
+    <view class="stat-card">
+      <view class="stat-icon">📊</view>
+      <text class="stat-value">{{statistics.totalRecords}}</text>
+      <text class="stat-label">监测数据</text>
+    </view>
+    
+    <view class="stat-card" bindtap="goToNotifications">
+      <view class="stat-icon">🔔</view>
+      <text class="stat-value">{{statistics.unreadNotifications}}</text>
+      <text class="stat-label">未读通知</text>
+    </view>
+  </view>
+
+  <!-- 图表区域 -->
+  <view class="chart-section">
+    <view class="section-header">
+      <text class="section-title">最近7天趋势</text>
+      <text class="section-more" bindtap="goToReports">查看更多 ></text>
+    </view>
+    
+    <view class="chart-container">
+      <view wx:if="{{chartData.length > 0}}" class="chart-bars">
+        <view wx:for="{{chartData}}" wx:key="date" class="bar-group">
+          <view class="bar-wrapper">
+            <view class="bar bar-moisture" style="height: {{item.moisture}}%"></view>
+            <view class="bar bar-oiliness" style="height: {{item.oiliness}}%"></view>
+          </view>
+          <text class="bar-date">{{item.date}}</text>
+        </view>
+      </view>
+      
+      <view wx:else class="empty-chart">
+        <text>暂无数据</text>
+      </view>
+    </view>
+    
+    <!-- 图例 -->
+    <view class="chart-legend">
+      <view class="legend-item">
+        <view class="legend-color legend-moisture"></view>
+        <text>水分含量</text>
+      </view>
+      <view class="legend-item">
+        <view class="legend-color legend-oiliness"></view>
+        <text>油性指数</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 设备列表 -->
+  <view class="devices-section">
+    <view class="section-header">
+      <text class="section-title">我的设备</text>
+      <text class="section-more" bindtap="goToDevices">管理 ></text>
+    </view>
+    
+    <view wx:if="{{devices.length > 0}}" class="device-list">
+      <view wx:for="{{devices}}" wx:key="id" class="device-card">
+        <view class="device-info">
+          <text class="device-name">{{item.device_name || item.name}}</text>
+          <text class="device-status">{{item.status === 'online' ? '在线' : '离线'}}</text>
+        </view>
+        <view class="device-data">
+          <text class="data-item">💧 {{item.last_moisture || '--'}}%</text>
+          <text class="data-item">✨ {{item.last_oiliness || '--'}}</text>
+        </view>
+      </view>
+    </view>
+    
+    <view wx:else class="empty-devices">
+      <text>暂无设备，请前往设备页面绑定</text>
+    </view>
+  </view>
+
+  <!-- 快捷入口 -->
+  <view class="quick-actions">
+    <view class="action-btn" bindtap="goToReports">
+      <view class="action-icon">📋</view>
+      <text>健康报告</text>
+    </view>
+    <view class="action-btn" bindtap="goToNotifications">
+      <view class="action-icon">🔔</view>
+      <text>消息中心</text>
+    </view>
+    <view class="action-btn" bindtap="goToDevices">
+      <view class="action-icon">⚙️</view>
+      <text>设备管理</text>
+    </view>
+  </view>
+</view>

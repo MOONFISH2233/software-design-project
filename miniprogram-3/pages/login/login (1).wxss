@@ -1,0 +1,86 @@
+page {
+  background-color: #f5f7fa;
+}
+
+.login-container {
+  padding: 60rpx 40rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.logo-area {
+  margin-top: 100rpx;
+  margin-bottom: 80rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.logo-circle {
+  width: 160rpx;
+  height: 160rpx;
+  background: linear-gradient(135deg, #6B46C1, #9F7AEA);
+  border-radius: 50%;
+  color: white;
+  font-size: 80rpx;
+  font-weight: bold;
+  line-height: 160rpx;
+  text-align: center;
+  box-shadow: 0 10rpx 30rpx rgba(107, 70, 193, 0.3);
+}
+
+.app-name {
+  margin-top: 30rpx;
+  font-size: 40rpx;
+  font-weight: bold;
+  color: #333;
+}
+
+.form-group {
+  width: 100%;
+  background: white;
+  border-radius: 20rpx;
+  padding: 20rpx 40rpx;
+  box-shadow: 0 4rpx 20rpx rgba(0,0,0,0.05);
+  box-sizing: border-box;
+}
+
+.input-item {
+  display: flex;
+  align-items: center;
+  border-bottom: 1px solid #eee;
+  padding: 30rpx 0;
+}
+
+.input-item:last-child {
+  border-bottom: none;
+}
+
+.label {
+  width: 120rpx;
+  font-size: 32rpx;
+  color: #333;
+}
+
+.input-box {
+  flex: 1;
+  font-size: 32rpx;
+}
+
+.btn-primary {
+  width: 100% !important;
+  margin-top: 60rpx;
+  background-color: #6B46C1;
+  color: white;
+  border-radius: 50rpx;
+  font-size: 36rpx;
+  padding: 24rpx 0;
+  box-shadow: 0 8rpx 20rpx rgba(107, 70, 193, 0.3);
+}
+
+.tips {
+  margin-top: 40rpx;
+  font-size: 26rpx;
+  color: #999;
+}

@@ -1,0 +1,44 @@
+<view class="login-container">
+  <view class="logo-area">
+    <view class="logo-circle">镜</view>
+    <text class="app-name">智能化妆镜系统</text>
+  </view>
+  
+  <view class="form-group">
+    <view class="input-item">
+      <text class="label">账号</text>
+      <input class="input-box" placeholder="请输入账号或手机号" value="{{username}}" bindinput="onUsernameInput" />
+    </view>
+    <view class="input-item">
+      <text class="label">密码</text>
+      <input class="input-box" placeholder="请输入密码" password="true" value="{{password}}" bindinput="onPasswordInput" />
+    </view>
+    <view class="input-item" wx:if="{{isRegisterMode}}">
+      <text class="label">昵称</text>
+      <input class="input-box" placeholder="请输入昵称" value="{{nickname}}" bindinput="onNicknameInput" />
+    </view>
+  </view>
+  
+  <button wx:if="{{!isRegisterMode}}" class="btn-primary" bindtap="handleLogin">登 录</button>
+  <button wx:else class="btn-primary" bindtap="handleRegister">注册并登录</button>
+
+  <view class="mode-row">
+    <text bindtap="toggleRegisterMode">{{isRegisterMode ? '已有账号，去登录' : '没有账号，注册一个'}}</text>
+  </view>
+
+  <view class="demo-panel" wx:if="{{!isRegisterMode}}">
+    <text class="demo-title">演示账号</text>
+    <view class="demo-grid">
+      <button
+        wx:for="{{demoAccounts}}"
+        wx:key="username"
+        class="demo-account {{username === item.username ? 'active' : ''}}"
+        data-index="{{index}}"
+        bindtap="selectDemoAccount"
+      >
+        {{item.label}}
+      </button>
+    </view>
+  </view>
+  <view class="tips">所有演示账号密码均为：123456</view>
+</view>

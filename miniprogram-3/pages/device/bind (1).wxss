@@ -1,0 +1,60 @@
+page {
+  background: #f5f7fa;
+}
+
+.bind-container {
+  min-height: 100vh;
+  padding: 40rpx 32rpx;
+}
+
+.form-card {
+  background: #ffffff;
+  border-radius: 18rpx;
+  padding: 36rpx 30rpx;
+  box-shadow: 0 8rpx 24rpx rgba(22, 24, 35, 0.06);
+}
+
+.form-title {
+  font-size: 38rpx;
+  font-weight: 700;
+  color: #2d3340;
+  margin-bottom: 10rpx;
+}
+
+.form-desc {
+  font-size: 26rpx;
+  color: #7a7f89;
+  margin-bottom: 36rpx;
+}
+
+.form-item {
+  margin-bottom: 28rpx;
+}
+
+.label {
+  display: block;
+  font-size: 26rpx;
+  color: #4d5563;
+  margin-bottom: 12rpx;
+}
+
+.input {
+  height: 88rpx;
+  padding: 0 24rpx;
+  background: #f7f8fb;
+  border-radius: 12rpx;
+  font-size: 30rpx;
+  color: #303642;
+}
+
+.submit-btn {
+  margin-top: 40rpx;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  color: #ffffff;
+  border-radius: 999rpx;
+  font-size: 30rpx;
+}
+
+.submit-btn::after {
+  border: none;
+}

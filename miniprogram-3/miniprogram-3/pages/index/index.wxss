@@ -1,0 +1,259 @@
+/**index.wxss - 数据看板样式**/
+
+.dashboard-container {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 20rpx;
+}
+
+/* 顶部标题 */
+.header {
+  padding: 40rpx 20rpx 20rpx;
+  color: white;
+}
+
+.title {
+  font-size: 48rpx;
+  font-weight: bold;
+  display: block;
+  margin-bottom: 10rpx;
+}
+
+.subtitle {
+  font-size: 28rpx;
+  opacity: 0.9;
+}
+
+/* 统计卡片网格 */
+.stats-grid {
+  display: flex;
+  justify-content: space-between;
+  margin: 20rpx 0;
+  gap: 20rpx;
+}
+
+.stat-card {
+  flex: 1;
+  background: white;
+  border-radius: 20rpx;
+  padding: 30rpx 20rpx;
+  text-align: center;
+  box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.1);
+}
+
+.stat-icon {
+  font-size: 48rpx;
+  margin-bottom: 10rpx;
+}
+
+.stat-value {
+  font-size: 40rpx;
+  font-weight: bold;
+  color: #6B46C1;
+  display: block;
+  margin-bottom: 8rpx;
+}
+
+.stat-label {
+  font-size: 24rpx;
+  color: #999;
+}
+
+/* 图表区域 */
+.chart-section {
+  background: white;
+  border-radius: 20rpx;
+  padding: 30rpx;
+  margin: 20rpx 0;
+  box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.1);
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 30rpx;
+}
+
+.section-title {
+  font-size: 32rpx;
+  font-weight: bold;
+  color: #333;
+}
+
+.section-more {
+  font-size: 26rpx;
+  color: #6B46C1;
+}
+
+.chart-container {
+  height: 400rpx;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-around;
+  padding: 20rpx 0;
+}
+
+.chart-bars {
+  display: flex;
+  justify-content: space-around;
+  width: 100%;
+  height: 100%;
+  align-items: flex-end;
+}
+
+.bar-group {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 1;
+}
+
+.bar-wrapper {
+  display: flex;
+  gap: 4rpx;
+  height: 300rpx;
+  align-items: flex-end;
+}
+
+.bar {
+  width: 20rpx;
+  border-radius: 4rpx 4rpx 0 0;
+  transition: height 0.3s;
+}
+
+.bar-moisture {
+  background: linear-gradient(to top, #667eea, #764ba2);
+}
+
+.bar-oiliness {
+  background: linear-gradient(to top, #f093fb, #f5576c);
+}
+
+.bar-date {
+  font-size: 20rpx;
+  color: #999;
+  margin-top: 10rpx;
+}
+
+.empty-chart {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #999;
+}
+
+/* 图例 */
+.chart-legend {
+  display: flex;
+  justify-content: center;
+  gap: 40rpx;
+  margin-top: 20rpx;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 10rpx;
+  font-size: 24rpx;
+  color: #666;
+}
+
+.legend-color {
+  width: 20rpx;
+  height: 20rpx;
+  border-radius: 4rpx;
+}
+
+.legend-moisture {
+  background: linear-gradient(to top, #667eea, #764ba2);
+}
+
+.legend-oiliness {
+  background: linear-gradient(to top, #f093fb, #f5576c);
+}
+
+/* 设备列表 */
+.devices-section {
+  background: white;
+  border-radius: 20rpx;
+  padding: 30rpx;
+  margin: 20rpx 0;
+  box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.1);
+}
+
+.device-list {
+  display: flex;
+  flex-direction: column;
+  gap: 20rpx;
+}
+
+.device-card {
+  padding: 20rpx;
+  background: #f8f9fa;
+  border-radius: 12rpx;
+  border-left: 4rpx solid #6B46C1;
+}
+
+.device-info {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 10rpx;
+}
+
+.device-name {
+  font-size: 30rpx;
+  font-weight: bold;
+  color: #333;
+}
+
+.device-status {
+  font-size: 24rpx;
+  color: #52c41a;
+}
+
+.device-data {
+  display: flex;
+  gap: 30rpx;
+}
+
+.data-item {
+  font-size: 26rpx;
+  color: #666;
+}
+
+.empty-devices {
+  text-align: center;
+  padding: 40rpx;
+  color: #999;
+  font-size: 28rpx;
+}
+
+/* 快捷入口 */
+.quick-actions {
+  display: flex;
+  justify-content: space-around;
+  margin: 20rpx 0 40rpx;
+}
+
+.action-btn {
+  flex: 1;
+  background: white;
+  border-radius: 20rpx;
+  padding: 30rpx 20rpx;
+  margin: 0 10rpx;
+  text-align: center;
+  box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.1);
+}
+
+.action-icon {
+  font-size: 48rpx;
+  margin-bottom: 10rpx;
+}
+
+.action-btn text {
+  font-size: 26rpx;
+  color: #333;
+}

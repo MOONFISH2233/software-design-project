@@ -1,0 +1,112 @@
+<mxfile host="app.diagrams.net" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36">
+  <diagram id="diagram-1" name="系统架构图">
+    <mxGraphModel dx="1404" dy="902" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1200" pageHeight="800" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="title" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=24;fontStyle=1;" value="智能美妆镜皮肤健康监测系统" vertex="1">
+          <mxGeometry height="40" width="500" x="350" y="20" as="geometry" />
+        </mxCell>
+        <mxCell id="presentation_layer" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=16;fontStyle=1;" value="表现层" vertex="1">
+          <mxGeometry height="180" width="1000" x="100" y="80" as="geometry" />
+        </mxCell>
+        <mxCell id="mini_program" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=14;" value="微信小程序&#xa;(用户端)" vertex="1">
+          <mxGeometry height="160" width="320" x="140" y="90" as="geometry" />
+        </mxCell>
+        <mxCell id="mini_features" parent="mini_program" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;whiteSpace=wrap;rounded=0;fontSize=11;" value=" 登录页&#xa; 数据看板&#xa; 设备管理&#xa; 社区互动&#xa; 个人中心&#xa; 健康报告&#xa; 通知中心" vertex="1">
+          <mxGeometry height="112" width="290" x="15" y="40" as="geometry" />
+        </mxCell>
+        <mxCell id="web_admin" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=14;" value="Web管理后台&#xa;(管理端)" vertex="1">
+          <mxGeometry height="160" width="320" x="760" y="90" as="geometry" />
+        </mxCell>
+        <mxCell id="web_features" parent="web_admin" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;whiteSpace=wrap;rounded=0;fontSize=11;" value=" 用户管理&lt;br&gt; 设备管理&lt;br&gt; 地域地图&lt;br&gt; 数据统计&lt;br&gt; Adminer&lt;div&gt;&amp;nbsp; &amp;nbsp; 数据库管理&lt;/div&gt;" vertex="1">
+          <mxGeometry height="129.23" width="305" x="15" y="30.77" as="geometry" />
+        </mxCell>
+        <mxCell id="conn1" edge="1" parent="1" source="mini_program" style="endArrow=classic;html=1;rounded=0;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="service_layer">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="300" y="250" as="sourcePoint" />
+            <mxPoint x="300" y="280" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="conn2" edge="1" parent="1" source="web_admin" style="endArrow=classic;html=1;rounded=0;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="service_layer">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="700" y="250" as="sourcePoint" />
+            <mxPoint x="700" y="280" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="service_layer" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=16;fontStyle=1;" value="服务层" vertex="1">
+          <mxGeometry height="200" width="1000" x="100" y="300" as="geometry" />
+        </mxCell>
+        <mxCell id="flask_server" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=14;fontStyle=1;" value="Flask API Server" vertex="1">
+          <mxGeometry height="170" width="920" x="140" y="310" as="geometry" />
+        </mxCell>
+        <mxCell id="auth_module" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=12;" value="Auth模块&#xa;JWT认证" vertex="1">
+          <mxGeometry height="70" width="120" x="150" y="360" as="geometry" />
+        </mxCell>
+        <mxCell id="sensor_module" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=12;" value="Sensor模块&#xa;数据接收" vertex="1">
+          <mxGeometry height="70" width="120" x="280" y="360" as="geometry" />
+        </mxCell>
+        <mxCell id="device_module" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=12;" value="Device模块&#xa;设备管理" vertex="1">
+          <mxGeometry height="70" width="120" x="420" y="360" as="geometry" />
+        </mxCell>
+        <mxCell id="stats_module" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=12;" value="Stats模块&#xa;数据统计" vertex="1">
+          <mxGeometry height="70" width="120" x="660" y="360" as="geometry" />
+        </mxCell>
+        <mxCell id="user_module" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=12;" value="User模块&#xa;用户管理" vertex="1">
+          <mxGeometry height="70" width="120" x="800" y="360" as="geometry" />
+        </mxCell>
+        <mxCell id="security_module" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=12;" value="Security模块&#xa;AES加密" vertex="1">
+          <mxGeometry height="70" width="120" x="930" y="360" as="geometry" />
+        </mxCell>
+        <mxCell id="conn3" edge="1" parent="1" source="flask_server" style="endArrow=classic;html=1;rounded=0;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="data_layer">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="600" y="510" as="sourcePoint" />
+            <mxPoint x="600" y="540" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="data_layer" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=16;fontStyle=1;" value="数据层" vertex="1">
+          <mxGeometry height="160" width="1000" x="100" y="560" as="geometry" />
+        </mxCell>
+        <mxCell id="mysql" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=14;fontStyle=1;" value="MySQL 8.0" vertex="1">
+          <mxGeometry height="90" width="980" x="110" y="600" as="geometry" />
+        </mxCell>
+        <mxCell id="users_table" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;" value="users&#xa;用户信息" vertex="1">
+          <mxGeometry height="60" width="100" x="120" y="620" as="geometry" />
+        </mxCell>
+        <mxCell id="devices_table" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;" value="devices&#xa;设备信息" vertex="1">
+          <mxGeometry height="60" width="100" x="230" y="620" as="geometry" />
+        </mxCell>
+        <mxCell id="bindings_table" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;" value="user_device_&#xa;bindings" vertex="1">
+          <mxGeometry height="60" width="100" x="340" y="620" as="geometry" />
+        </mxCell>
+        <mxCell id="skin_table" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;" value="skin_sensor_&#xa;data" vertex="1">
+          <mxGeometry height="60" width="100" x="450" y="620" as="geometry" />
+        </mxCell>
+        <mxCell id="env_table" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;" value="environment_&#xa;sensor_data" vertex="1">
+          <mxGeometry height="60" width="110" x="710" y="620" as="geometry" />
+        </mxCell>
+        <mxCell id="stats_table" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;" value="daily_&#xa;statistics" vertex="1">
+          <mxGeometry height="60" width="100" x="850" y="620" as="geometry" />
+        </mxCell>
+        <mxCell id="alerts_table" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;" value="alerts&#xa;告警信息" vertex="1">
+          <mxGeometry height="60" width="100" x="980" y="620" as="geometry" />
+        </mxCell>
+        <mxCell id="simulator" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=13;" value="模拟客户端&#xa;(设备模拟器)" vertex="1">
+          <mxGeometry height="80" width="140" x="1120" y="360" as="geometry" />
+        </mxCell>
+        <mxCell id="conn_sim" edge="1" parent="1" source="simulator" style="endArrow=classic;html=1;rounded=0;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" target="flask_server">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="1120" y="400" as="sourcePoint" />
+            <mxPoint x="1060" y="400" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="tech_stack" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=12;" value="技术栈：&#xa;Python + Flask + gunicorn + gevent + MySQL + SQLAlchemy + JWT + AES-256" vertex="1">
+          <mxGeometry height="30" width="600" x="300" y="750" as="geometry" />
+        </mxCell>
+        <mxCell id="AoFpnPrFh0lXnJ3WkqZE-2" edge="1" parent="1" source="alerts_table" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.25;exitY=1;exitDx=0;exitDy=0;" target="alerts_table">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

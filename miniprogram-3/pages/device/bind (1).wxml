@@ -1,0 +1,23 @@
+<view class="bind-container">
+  <view class="form-card">
+    <view class="form-title">绑定新设备</view>
+    <view class="form-desc">输入设备机身或后台分配的设备ID</view>
+
+    <view class="form-item">
+      <text class="label">设备ID</text>
+      <input class="input" value="{{device_id}}" bindinput="onDeviceIdInput" placeholder="例如 DEV_001" />
+    </view>
+
+    <view class="form-item">
+      <text class="label">设备名称</text>
+      <input class="input" value="{{device_name}}" bindinput="onDeviceNameInput" placeholder="例如 卧室化妆镜" />
+    </view>
+
+    <view class="form-item">
+      <text class="label">使用位置</text>
+      <input class="input" value="{{location}}" bindinput="onLocationInput" placeholder="例如 家中" />
+    </view>
+
+    <button class="submit-btn" bindtap="submitBind">确认绑定</button>
+  </view>
+</view>

@@ -1,0 +1,164 @@
+/* pages/profile/profile.wxss - 个人中心样式 */
+
+.profile-container {
+  min-height: 100vh;
+  background: #f5f7fa;
+}
+
+/* 用户信息头部 */
+.user-header {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 60rpx 30rpx 40rpx;
+  display: flex;
+  align-items: center;
+  gap: 30rpx;
+}
+
+.avatar {
+  width: 120rpx;
+  height: 120rpx;
+  border-radius: 50%;
+  border: 4rpx solid rgba(255, 255, 255, 0.3);
+}
+
+.user-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8rpx;
+}
+
+.nickname {
+  font-size: 36rpx;
+  font-weight: bold;
+  color: white;
+}
+
+.username {
+  font-size: 24rpx;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.skin-type {
+  font-size: 26rpx;
+  color: rgba(255, 255, 255, 0.9);
+  margin-top: 8rpx;
+}
+
+/* 统计数据 */
+.stats-section {
+  background: white;
+  margin: 30rpx;
+  border-radius: 20rpx;
+  padding: 40rpx 30rpx;
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.08);
+}
+
+.stat-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10rpx;
+}
+
+.stat-value {
+  font-size: 48rpx;
+  font-weight: bold;
+  color: #6B46C1;
+}
+
+.stat-label {
+  font-size: 26rpx;
+  color: #999;
+}
+
+.stat-divider {
+  width: 2rpx;
+  height: 60rpx;
+  background: #e0e0e0;
+}
+
+/* 菜单区域 */
+.menu-section {
+  margin: 30rpx;
+}
+
+.section-title {
+  font-size: 28rpx;
+  color: #999;
+  margin-bottom: 20rpx;
+  padding-left: 10rpx;
+}
+
+.menu-list {
+  background: white;
+  border-radius: 20rpx;
+  overflow: hidden;
+  box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.08);
+}
+
+.menu-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 30rpx;
+  border-bottom: 1rpx solid #f0f0f0;
+}
+
+.menu-item:last-child {
+  border-bottom: none;
+}
+
+.menu-left {
+  display: flex;
+  align-items: center;
+  gap: 20rpx;
+}
+
+.menu-icon {
+  font-size: 40rpx;
+}
+
+.menu-text {
+  font-size: 30rpx;
+  color: #333;
+}
+
+.arrow {
+  font-size: 40rpx;
+  color: #ccc;
+}
+
+.badge {
+  background: #ff4d4f;
+  color: white;
+  font-size: 22rpx;
+  padding: 4rpx 12rpx;
+  border-radius: 20rpx;
+  margin-right: 10rpx;
+}
+
+/* 退出登录区域 */
+.logout-section {
+  margin: 30rpx;
+}
+
+.btn-logout {
+  background: white;
+  color: #ff4d4f;
+  border: 2rpx solid #ff4d4f;
+  border-radius: 50rpx;
+  padding: 20rpx;
+  font-size: 30rpx;
+}
+
+/* 版本信息 */
+.version-info {
+  text-align: center;
+  padding: 40rpx;
+  color: #999;
+  font-size: 24rpx;
+}

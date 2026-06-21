@@ -1,0 +1,35 @@
+<view class="notification-container">
+  <view class="page-header">
+    <text class="page-title">消息通知</text>
+    <text class="page-subtitle">设备提醒、报告生成和系统消息</text>
+  </view>
+
+  <view wx:if="{{notifications.length > 0}}" class="notice-list">
+    <view
+      wx:for="{{notifications}}"
+      wx:key="notification_id"
+      class="notice-card {{item.is_read ? 'read' : 'unread'}}"
+      bindtap="markRead"
+      data-id="{{item.notification_id}}"
+    >
+      <view class="notice-top">
+        <text class="notice-title">{{item.title}}</text>
+        <text wx:if="{{!item.is_read}}" class="dot"></text>
+      </view>
+      <text class="notice-content">{{item.content}}</text>
+      <view class="notice-bottom">
+        <text class="notice-type">{{item.type || 'message'}}</text>
+        <text class="notice-time">{{item.create_time}}</text>
+      </view>
+    </view>
+  </view>
+
+  <view wx:else class="empty-state">
+    <view class="empty-icon">通知</view>
+    <text class="empty-text">暂无通知</text>
+    <text class="empty-desc">新的设备或报告提醒会出现在这里</text>
+  </view>
+
+  <view wx:if="{{loading && notifications.length > 0}}" class="load-more">加载中...</view>
+  <view wx:if="{{!hasMore && notifications.length > 0}}" class="load-more">没有更多了</view>
+</view>

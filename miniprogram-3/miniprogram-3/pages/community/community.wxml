@@ -1,0 +1,74 @@
+<!--pages/community/community.wxml-->
+<view class="community-container">
+  <!-- 顶部操作栏 -->
+  <view class="header-bar">
+    <text class="page-title">护肤社区</text>
+    <button class="btn-publish" bindtap="createPost">✏️ 发布</button>
+  </view>
+
+  <!-- 帖子列表 -->
+  <view wx:if="{{posts.length > 0}}" class="post-list">
+    <view wx:for="{{posts}}" wx:key="id" class="post-card">
+      <!-- 帖子头部 -->
+      <view class="post-header">
+        <image class="avatar" src="{{item.user_avatar || '/images/default-avatar.png'}}" mode="aspectFill"></image>
+        <view class="user-info">
+          <text class="username">{{item.user_nickname || item.username}}</text>
+          <text class="post-time">{{item.created_at}}</text>
+        </view>
+      </view>
+
+      <!-- 帖子内容 -->
+      <view class="post-content">
+        <text class="post-text">{{item.content}}</text>
+        
+        <!-- 图片展示 -->
+        <view wx:if="{{item.images && item.images.length > 0}}" class="post-images">
+          <image 
+            wx:for="{{item.images}}" 
+            wx:key="index"
+            wx:for-item="img"
+            class="post-image" 
+            src="{{img}}" 
+            mode="aspectFill"
+            bindtap="previewImage"
+            data-url="{{img}}"
+          ></image>
+        </view>
+      </view>
+
+      <!-- 帖子底部操作 -->
+      <view class="post-footer">
+        <view class="action-item" bindtap="likePost" data-id="{{item.id}}">
+          <text class="action-icon {{item.is_liked ? 'liked' : ''}}">
+            {{item.is_liked ? '❤️' : '🤍'}}
+          </text>
+          <text class="action-count">{{item.likes || 0}}</text>
+        </view>
+        
+        <view class="action-item" bindtap="commentPost" data-id="{{item.id}}">
+          <text class="action-icon">💬</text>
+          <text class="action-count">{{item.comments || 0}}</text>
+        </view>
+        
+        <view class="action-item">
+          <text class="action-icon">🔗</text>
+          <text class="action-text">分享</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 空状态 -->
+  <view wx:else class="empty-state">
+    <view class="empty-icon">💬</view>
+    <text class="empty-text">暂无帖子</text>
+    <text class="empty-desc">成为第一个分享护肤心得的人吧！</text>
+    <button class="btn-primary" bindtap="createPost">立即发布</button>
+  </view>
+
+  <!-- 加载更多提示 -->
+  <view wx:if="{{!hasMore && posts.length > 0}}" class="load-more">
+    <text>没有更多了</text>
+  </view>
+</view>

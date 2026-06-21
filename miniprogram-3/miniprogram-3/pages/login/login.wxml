@@ -1,0 +1,20 @@
+<view class="login-container">
+  <view class="logo-area">
+    <view class="logo-circle">镜</view>
+    <text class="app-name">智能化妆镜系统</text>
+  </view>
+  
+  <view class="form-group">
+    <view class="input-item">
+      <text class="label">账号</text>
+      <input class="input-box" placeholder="请输入测试账号" model:value="{{username}}" />
+    </view>
+    <view class="input-item">
+      <text class="label">密码</text>
+      <input class="input-box" placeholder="请输入密码" password="true" model:value="{{password}}" />
+    </view>
+  </view>
+  
+  <button class="btn-primary" bindtap="handleLogin">登 录 / 注 册</button>
+  <view class="tips">没有账号？随便输入即可测试登录</view>
+</view>

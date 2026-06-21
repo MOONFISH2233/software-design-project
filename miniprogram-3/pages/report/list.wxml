@@ -1,0 +1,29 @@
+<view class="report-container">
+  <view class="page-header">
+    <text class="page-title">健康报告</text>
+    <text class="page-subtitle">查看每次生成的皮肤健康分析</text>
+  </view>
+
+  <view wx:if="{{reports.length > 0}}" class="report-list">
+    <view wx:for="{{reports}}" wx:key="report_id" class="report-card" bindtap="viewDetail" data-id="{{item.report_id}}">
+      <view class="card-top">
+        <text class="report-title">{{item.title}}</text>
+        <text class="score">{{item.score || '--'}}</text>
+      </view>
+      <text class="summary">{{item.summary || '暂无摘要'}}</text>
+      <view class="card-bottom">
+        <text class="type">{{item.report_type || 'report'}}</text>
+        <text class="time">{{item.generate_time || ''}}</text>
+      </view>
+    </view>
+  </view>
+
+  <view wx:else class="empty-state">
+    <view class="empty-icon">报告</view>
+    <text class="empty-text">暂无健康报告</text>
+    <text class="empty-desc">设备产生数据后会自动生成报告</text>
+  </view>
+
+  <view wx:if="{{loading && reports.length > 0}}" class="load-more">加载中...</view>
+  <view wx:if="{{!hasMore && reports.length > 0}}" class="load-more">没有更多了</view>
+</view>
